@@ -31,4 +31,12 @@ utils.LRU = function(sz)
   }
 end
 
+utils.default = function(val, def)
+  if val ~= nil then
+    return val
+  else
+    return def
+  end
+end
+
 return utils

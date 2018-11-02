@@ -1,7 +1,7 @@
 -- luacheck: globals unpack vim
 local nvim = vim.api
 
-local LRU = require("impromptu.utils").LRU
+local utils = require("impromptu.utils")
 local heuristics = require("impromptu.heuristics")
 
 
@@ -13,7 +13,7 @@ local impromptu = {
 }
 
 
-setmetatable(impromptu.memory, LRU(impromptu.config.lru_size or 10))
+setmetatable(impromptu.memory, utils.LRU(impromptu.config.lru_size or 10))
 
 local new_obj = function()
   local session = math.random(10000, 99999)
@@ -92,14 +92,16 @@ impromptu.ll.render = function(obj)
     nvim.nvim_command("map <buffer> " .. line.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. line.item .. "')<CR>")
   end
 
-  table.insert(content, impromptu.ll.line{
-    key = "q",
-    item = "quit",
-    description = "Close this prompt",
-    command = "q!"
-  })
+  if obj.quitable then
+    table.insert(content, impromptu.ll.line{
+      key = "q",
+      item = "quit",
+      description = "Close this prompt",
+      command = "q!"
+    })
 
-  nvim.nvim_command("map <buffer> q <Cmd>lua require('impromptu').core.destroy("  .. obj.session .. ")<CR>")
+    nvim.nvim_command("map <buffer> q <Cmd>lua require('impromptu').core.destroy("  .. obj.session .. ")<CR>")
+  end
 
   if #content + footer_sz < h then
     local fill = h - #content  - footer_sz
@@ -132,6 +134,7 @@ end
 impromptu.core.ask = function(args)
   local obj = new_obj()
 
+  obj.quitable = utils.default(args.quitable, true)
   obj.header = args.question
   obj.lines = args.options
   obj.handler = args.handler
