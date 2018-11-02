@@ -64,3 +64,4 @@ That's it! Quick and simple!
 - [ ] Drawing enhancements
 - [ ] Restoring previous session
 - [ ] Async capabilities
+- [ ] Tree-based prompts
