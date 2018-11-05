@@ -39,6 +39,7 @@ _G.my_quit_menu = function()
       else
         vim.api.nvim_command("echo 'Phew!'")
       end
+      return true
     end
   }
 end
@@ -46,8 +47,11 @@ end
 nvim.nvim_command("command! -nargs=0 QuitMenu lua my_quit_menu()")
 ```
 
-The public function `ask` takes a question, some options and a handler function.
-Additionally, it takes a `quitable` option, which conveniently creates a `quit` option of you.
+The public function `ask` takes:
+- `question`: The message on the prompt;
+- `options`: A sequence of options, as described below;
+- `handler`: a function that takes the session and the chosen option and returns a boolean on whether it should close the prompt;
+- `[quitable]`: Whether the prompt should contain a default option `q` that just closes the prompt.
 
 The options consit of:
 - `item`: the value that your handler function will receive;
@@ -55,13 +59,27 @@ The options consit of:
 - `[key]`: The key that will be bound to that option.
   - If not supplied, it will try to get the best possible option from the description.
 
+Optionally, you could give a map instead of an array:
+```lua
+{
+  item = {
+    description = "..."
+  },
+  other = {
+    description = "..."
+  }
+}
+```
+
+This is required for creating tree-based prompts. Please read more about [tree-based prompts on docs/tree-based.md](docs/tree-based.md)
+
 That's it! Quick and simple!
 
 ## TODO
 
+- [x] [Tree-based prompts](docs/tree-based.md)
 - [ ] Fuzzy finder
 - [ ] Highlighting
 - [ ] Drawing enhancements
 - [ ] Restoring previous session
 - [ ] Async capabilities
-- [ ] Tree-based prompts

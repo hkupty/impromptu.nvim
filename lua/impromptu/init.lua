@@ -74,22 +74,51 @@ impromptu.ll.render = function(obj)
   nvim.nvim_command("mapclear <buffer>")
 
   if obj.header ~= nil then
-    table.insert(content, obj.header)
+    local header = obj.header
+    local up = nil
+
+    if #obj.breadcrumbs >= 1 then
+       header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
+
+      up = impromptu.ll.line{
+        key = "h",
+        description = "Move up one level",
+      }
+
+    nvim.nvim_command("map <buffer> h <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '__up')<CR>")
+
+    selected.h = 1
+    end
+
+    table.insert(content, header)
     table.insert(content, impromptu.ll.div(sz))
     table.insert(content, "")
+
+    if up ~= nil then
+      table.insert(content, up)
+    end
   end
 
-  local lines = {}
-  for k, v in ipairs(obj.lines) do
-    local line = v
+  local process = function(item, line)
     local key = heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
     line.key = key
 
     table.insert(content, impromptu.ll.line(line))
-    table.insert(lines, impromptu.ll.line(line))
-    nvim.nvim_command("map <buffer> " .. line.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. line.item .. "')<CR>")
+    nvim.nvim_command("map <buffer> " .. line.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. item .. "')<CR>")
+  end
+
+  local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
+
+  if #line_lvl == 0 then
+    for item, line in pairs(line_lvl) do
+      process(item, line)
+    end
+  else
+    for _, line in ipairs(line_lvl) do
+      process(line.item, line)
+    end
   end
 
   if obj.quitable then
@@ -97,7 +126,6 @@ impromptu.ll.render = function(obj)
       key = "q",
       item = "quit",
       description = "Close this prompt",
-      command = "q!"
     })
 
     nvim.nvim_command("map <buffer> q <Cmd>lua require('impromptu').core.destroy("  .. obj.session .. ")<CR>")
@@ -136,6 +164,7 @@ impromptu.core.ask = function(args)
 
   obj.quitable = utils.default(args.quitable, true)
   obj.header = args.question
+  obj.breadcrumbs = {}
   obj.lines = args.options
   obj.handler = args.handler
 
@@ -145,15 +174,44 @@ impromptu.core.ask = function(args)
   return obj
 end
 
-impromptu.core.callback = function(session, option)
-  local obj = impromptu.memory[session]
+impromptu.core.tree = function(session, option)
 
-  if obj ~= nil then
-    obj:handler(option)
+  local breadcrumbs = utils.clone(session.breadcrumbs)
+
+  if option == "__up" then
+    breadcrumbs[#breadcrumbs] = nil
+  else
+    table.insert(breadcrumbs, option)
   end
 
-  if obj.should_close == nil or obj.should_close then
+  local lens = utils.interleave(breadcrumbs, 'children')
+
+  local at = utils.get_in(session.lines, lens)
+
+  if at ~= nil then
+    session.breadcrumbs = breadcrumbs
+    return true
+  else
+    return false
+  end
+end
+
+impromptu.core.callback = function(session, option)
+  local obj = impromptu.memory[session]
+  local should_close = true
+
+  if obj ~= nil then
+    if impromptu.core.tree(obj, option) then
+      should_close = false
+    else
+      should_close = obj:handler(option)
+    end
+  end
+
+  if should_close then
     impromptu.core.destroy(obj)
+  else
+    impromptu.ll.render(obj)
   end
 end
 
