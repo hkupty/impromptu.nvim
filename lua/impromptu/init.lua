@@ -58,90 +58,141 @@ impromptu.ll.sub_div = function(sz)
   return string.rep("•", sz)
 end
 
-impromptu.ll.render = function(obj)
-  local content = {}
+impromptu.ll.window_for_obj = function(obj)
+  obj = impromptu.ll.show(obj)
 
   local winnr = nvim.nvim_call_function("bufwinnr", {obj.buffer})
   local window = nvim.nvim_call_function("win_getid", {winnr})
-
   local sz = nvim.nvim_win_get_width(window)
   local h = nvim.nvim_win_get_height(window)
-  local has_footer = obj.footer and true or false
-  local footer_sz = has_footer and 2 or 0
 
-  local selected = {q = 1}
+  return {
+    window = window,
+    width = sz,
+    height = h
+  }
+end
 
-  nvim.nvim_command("mapclear <buffer>")
-
-  if obj.header ~= nil then
-    local header = obj.header
-    local up = nil
-
-    if #obj.breadcrumbs >= 1 then
-       header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
-
-      up = impromptu.ll.line{
-        key = "h",
-        description = "Move up one level",
-      }
-
-    nvim.nvim_command("map <buffer> h <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '__up')<CR>")
-
-    selected.h = 1
-    end
-
-    table.insert(content, header)
-    table.insert(content, impromptu.ll.div(sz))
-    table.insert(content, "")
-
-    if up ~= nil then
-      table.insert(content, up)
-    end
-  end
-
+impromptu.ll.get_options = function(obj)
+  local opts = {}
+  local selected = {}
   local process = function(item, line)
     local key = heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
     line.key = key
+    line.item = item
+    return line
+  end
 
-    table.insert(content, impromptu.ll.line(line))
-    nvim.nvim_command("map <buffer> " .. line.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. item .. "')<CR>")
+  if #obj.breadcrumbs >= 1 then
+    table.insert(opts, {
+        key = "h",
+        description = "Move up one level",
+        item = "__up"
+      })
+    selected.h = 1
+  end
+
+  if obj.quitable then
+    selected.q = 1
   end
 
   local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
-
   if #line_lvl == 0 then
+    -- TODO sort those
     for item, line in pairs(line_lvl) do
-      process(item, line)
+      table.insert(opts, process(item, line))
     end
   else
     for _, line in ipairs(line_lvl) do
-      process(line.item, line)
+      table.insert(opts, process(line.item, line))
     end
   end
 
   if obj.quitable then
-    table.insert(content, impromptu.ll.line{
+    table.insert(opts, {
       key = "q",
-      item = "quit",
+      item = "__quit",
       description = "Close this prompt",
     })
-
-    nvim.nvim_command("map <buffer> q <Cmd>lua require('impromptu').core.destroy("  .. obj.session .. ")<CR>")
   end
 
-  if #content + footer_sz < h then
+  return opts
+end
+
+impromptu.ll.get_header = function(obj)
+  local header = ""
+
+  if obj.header ~= nil then
+    header = obj.header
+  end
+
+  if #obj.breadcrumbs >= 1 then
+     header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
+   end
+
+   return header
+ end
+
+impromptu.ll.get_footer = function(obj)
+  local footer = nil
+
+  if obj.footer ~= nil then
+    footer = obj.footer
+  end
+
+   return footer
+ end
+
+ impromptu.ll.do_mappings = function(obj, opts)
+  nvim.nvim_command("mapclear <buffer>")
+
+   for _, v in ipairs(opts) do
+     nvim.nvim_command("map <buffer> " .. v.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. v.item .. "')<CR>")
+   end
+ end
+
+impromptu.ll.draw = function(obj, opts, window_ops)
+  local header = impromptu.ll.get_header(obj)
+  local footer = impromptu.ll.get_footer(obj)
+  local footer_sz = footer ~= "" and 2 or 1
+
+  local content = {}
+
+  if header ~= "" then
+    table.insert(content, header)
+    table.insert(content, impromptu.ll.div(window_ops.width))
+  end
+
+  table.insert(content, "")
+
+  for _, opt in ipairs(opts) do
+    table.insert(content, impromptu.ll.line(opt))
+  end
+
+  if #content + footer_sz < window_ops.height then
     local fill = h - #content  - footer_sz
     for _ = 1, fill do
       table.insert(content, "")
     end
   end
 
-  if has_footer then
-    table.insert(content, impromptu.ll.div(sz))
-    table.insert(content, obj.footer)
+  if footer ~= "" then
+    table.insert(content, impromptu.ll.div(window_ops.width))
+    table.insert(content, footer)
   end
+
+  return content
+ end
+
+impromptu.ll.render = function(obj)
+
+  local opts = impromptu.ll.get_options(obj)
+  local window_ops = impromptu.ll.window_for_obj(obj)
+
+  impromptu.ll.do_mappings(obj, opts)
+  local content = impromptu.ll.draw(obj, opts, window_ops)
 
   nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
 end
@@ -168,7 +219,6 @@ impromptu.core.ask = function(args)
   obj.lines = args.options
   obj.handler = args.handler
 
-  obj = impromptu.ll.show(obj)
   obj = impromptu.ll.render(obj)
 
   return obj
@@ -200,12 +250,18 @@ impromptu.core.callback = function(session, option)
   local obj = impromptu.memory[session]
   local should_close = true
 
-  if obj ~= nil then
-    if impromptu.core.tree(obj, option) then
-      should_close = false
-    else
-      should_close = obj:handler(option)
-    end
+  if obj == nil then
+    -- TODO warning
+     return
+  elseif option == "__quit" then
+    impromptu.core.destroy(obj)
+    return
+  end
+
+  if impromptu.core.tree(obj, option) then
+    should_close = false
+  else
+    should_close = obj:handler(option)
   end
 
   if should_close then
