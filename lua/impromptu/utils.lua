@@ -81,4 +81,24 @@ utils.interleave = function(tbl, itn)
   return new
 end
 
+utils.key_to_attr = function(tbl, attr_name)
+  local new = {}
+  for k, v in  pairs(tbl) do
+    local itm = utils.clone(v)
+    itm[attr_name] = k
+    table.insert(new, itm)
+  end
+
+  return new
+end
+
+utils.sorted_by = function(tbl, acc_fn)
+  local new = utils.clone(tbl)
+  local compare = function(a, b)
+    return acc_fn(a) < acc_fn(b)
+  end
+  table.sort(new, compare)
+  return new
+end
+
 return utils

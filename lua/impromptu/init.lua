@@ -76,12 +76,11 @@ end
 impromptu.ll.get_options = function(obj)
   local opts = {}
   local selected = {}
-  local process = function(item, line)
+  local process = function(line)
     local key = line.key or heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
     line.key = key
-    line.item = line.item or item
     return line
   end
 
@@ -99,15 +98,13 @@ impromptu.ll.get_options = function(obj)
   end
 
   local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
+
   if #line_lvl == 0 then
-    -- TODO sort those
-    for item, line in pairs(line_lvl) do
-      table.insert(opts, process(item, line))
-    end
-  else
-    for _, line in ipairs(line_lvl) do
-      table.insert(opts, process(nil, line))
-    end
+    line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "item"), function(i) return i.description end)
+  end
+
+  for _, line in ipairs(line_lvl) do
+    table.insert(opts, process(line))
   end
 
   if obj.quitable then
