@@ -77,11 +77,11 @@ impromptu.ll.get_options = function(obj)
   local opts = {}
   local selected = {}
   local process = function(item, line)
-    local key = heuristics.get_unique_key(selected, line.description)
+    local key = line.key or heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
     line.key = key
-    line.item = item
+    line.item = line.item or item
     return line
   end
 
@@ -106,7 +106,7 @@ impromptu.ll.get_options = function(obj)
     end
   else
     for _, line in ipairs(line_lvl) do
-      table.insert(opts, process(line.item, line))
+      table.insert(opts, process(nil, line))
     end
   end
 
