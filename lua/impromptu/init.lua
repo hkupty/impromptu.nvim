@@ -180,7 +180,7 @@ impromptu.ll.draw = function(obj, opts, window_ops)
   end
 
   if #content + footer_sz < window_ops.height then
-    local fill = h - #content  - footer_sz
+    local fill = window_ops.height - #content  - footer_sz
     for _ = 1, fill do
       table.insert(content, "")
     end
