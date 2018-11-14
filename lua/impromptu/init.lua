@@ -136,7 +136,7 @@ impromptu.ll.get_header = function(obj)
  end
 
 impromptu.ll.get_footer = function(obj)
-  local footer = nil
+  local footer = ""
 
   if obj.footer ~= nil then
     footer = obj.footer
