@@ -22,10 +22,10 @@ local new_obj = function()
   impromptu.memory[session] = {}
 
   setmetatable(obj, {
-    __index = function(table, key)
+    __index = function(_, key)
       return impromptu.memory[session][key]
     end,
-    __newindex = function(table, key, value)
+    __newindex = function(_, key, value)
       impromptu.memory[session][key] = value
     end})
 
@@ -149,7 +149,15 @@ impromptu.ll.get_footer = function(obj)
   nvim.nvim_command("mapclear <buffer>")
 
    for _, v in ipairs(opts) do
-     nvim.nvim_command("map <buffer> " .. v.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. v.item .. "')<CR>")
+     nvim.nvim_command(
+       "map <buffer> " ..
+       v.key ..
+       " <Cmd>lua require('impromptu').core.callback("  ..
+       obj.session ..
+       ", '" ..
+       v.item ..
+       "')<CR>"
+     )
    end
  end
 
@@ -198,7 +206,7 @@ impromptu.ll.render = function(obj)
 end
 
 impromptu.core.destroy = function(obj_or_session)
-  local obj = nil
+  local obj
 
   if type(obj_or_session) == "table" then
     obj = obj_or_session
@@ -248,7 +256,7 @@ end
 
 impromptu.core.callback = function(session, option)
   local obj = impromptu.memory[session]
-  local should_close = true
+  local should_close
 
   if obj == nil then
     -- TODO warning
