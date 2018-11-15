@@ -25,6 +25,8 @@ Is a function that takes [`ask_args`](#ask_args) and returns a [`session`](#sess
 Produces a menu on the bottom of the currend window with a header and the supplied options.
 It can produce a [tree-based menu](tree-based.md) if options contain children.
 
+You can look at a [complete example](sample.md) to have a better idea.
+
 ## Data Structures
 
 All data types are supplied here:
