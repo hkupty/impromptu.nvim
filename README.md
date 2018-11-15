@@ -1,6 +1,8 @@
 # impromptu.nvim
 
 [![Docs](https://readthedocs.org/projects/impromptunvim/badge/?version=latest)](http://impromptunvim.readthedocs.io/)
+
+
 Create prompts fast and easy
 
 ## What?
@@ -11,7 +13,9 @@ It is designed in a way that it should be simple to create and reuse prompts for
 
 The root problem it was meant to solve was changing configurations on the flight for other plugins, such as [iron.nvim](https://github.com/Vigemus/iron.nvim).
 
+## How?
 
+Take a look at the docs [here](http://impromptunvim.readthedocs.io/).
 
 ## TODO
 
