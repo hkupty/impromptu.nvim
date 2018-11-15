@@ -7,29 +7,29 @@ local heuristics = require("impromptu.heuristics")
 
 local impromptu = {
   config = {},
-  memory = {},
+  sessions = {},
   ll = {},
   core = {}
 }
 
 
-setmetatable(impromptu.memory, utils.LRU(impromptu.config.lru_size or 10))
+setmetatable(impromptu.sessions, utils.LRU(impromptu.config.lru_size or 10))
 
 local new_obj = function()
   local session = math.random(10000, 99999)
   local obj = {}
 
-  impromptu.memory[session] = {}
+  impromptu.sessions[session] = {}
 
   setmetatable(obj, {
-    __index = function(table, key)
-      return impromptu.memory[session][key]
+    __index = function(_, key)
+      return impromptu.sessions[session][key]
     end,
-    __newindex = function(table, key, value)
-      impromptu.memory[session][key] = value
+    __newindex = function(_, key, value)
+      impromptu.sessions[session][key] = value
     end})
 
-  obj.session = session
+  obj.session_id = session
 
   return obj
 end
@@ -76,12 +76,12 @@ end
 impromptu.ll.get_options = function(obj)
   local opts = {}
   local selected = {}
-  local process = function(item, line)
-    local key = heuristics.get_unique_key(selected, line.description)
+  local process = function(line)
+    local key = line.key or heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
     line.key = key
-    line.item = item
+    line.item = line.item or line.key_name
     return line
   end
 
@@ -99,15 +99,13 @@ impromptu.ll.get_options = function(obj)
   end
 
   local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
+
   if #line_lvl == 0 then
-    -- TODO sort those
-    for item, line in pairs(line_lvl) do
-      table.insert(opts, process(item, line))
-    end
-  else
-    for _, line in ipairs(line_lvl) do
-      table.insert(opts, process(line.item, line))
-    end
+    line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "key_name"), function(i) return i.description end)
+  end
+
+  for _, line in ipairs(line_lvl) do
+    table.insert(opts, process(line))
   end
 
   if obj.quitable then
@@ -136,7 +134,7 @@ impromptu.ll.get_header = function(obj)
  end
 
 impromptu.ll.get_footer = function(obj)
-  local footer = nil
+  local footer = ""
 
   if obj.footer ~= nil then
     footer = obj.footer
@@ -149,7 +147,15 @@ impromptu.ll.get_footer = function(obj)
   nvim.nvim_command("mapclear <buffer>")
 
    for _, v in ipairs(opts) do
-     nvim.nvim_command("map <buffer> " .. v.key .. " <Cmd>lua require('impromptu').core.callback("  .. obj.session .. ", '" .. v.item .. "')<CR>")
+     nvim.nvim_command(
+       "map <buffer> " ..
+       v.key ..
+       " <Cmd>lua require('impromptu').core.callback("  ..
+       obj.session_id ..
+       ", '" ..
+       v.item ..
+       "')<CR>"
+     )
    end
  end
 
@@ -172,7 +178,7 @@ impromptu.ll.draw = function(obj, opts, window_ops)
   end
 
   if #content + footer_sz < window_ops.height then
-    local fill = h - #content  - footer_sz
+    local fill = window_ops.height - #content  - footer_sz
     for _ = 1, fill do
       table.insert(content, "")
     end
@@ -194,16 +200,20 @@ impromptu.ll.render = function(obj)
   impromptu.ll.do_mappings(obj, opts)
   local content = impromptu.ll.draw(obj, opts, window_ops)
 
+  nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
+  nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
   nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
+  nvim.nvim_buf_set_option(obj.buffer, "modifiable", false)
+  nvim.nvim_buf_set_option(obj.buffer, "readonly", true)
 end
 
 impromptu.core.destroy = function(obj_or_session)
-  local obj = nil
+  local obj
 
   if type(obj_or_session) == "table" then
     obj = obj_or_session
   else
-    obj = impromptu.memory[obj_or_session]
+    obj = impromptu.sessions[obj_or_session]
   end
 
   local window = math.floor(nvim.nvim_call_function("bufwinnr", {obj.buffer}))
@@ -247,8 +257,8 @@ impromptu.core.tree = function(session, option)
 end
 
 impromptu.core.callback = function(session, option)
-  local obj = impromptu.memory[session]
-  local should_close = true
+  local obj = impromptu.sessions[session]
+  local should_close
 
   if obj == nil then
     -- TODO warning
