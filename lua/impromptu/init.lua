@@ -7,29 +7,29 @@ local heuristics = require("impromptu.heuristics")
 
 local impromptu = {
   config = {},
-  memory = {},
+  sessions = {},
   ll = {},
   core = {}
 }
 
 
-setmetatable(impromptu.memory, utils.LRU(impromptu.config.lru_size or 10))
+setmetatable(impromptu.sessions, utils.LRU(impromptu.config.lru_size or 10))
 
 local new_obj = function()
   local session = math.random(10000, 99999)
   local obj = {}
 
-  impromptu.memory[session] = {}
+  impromptu.sessions[session] = {}
 
   setmetatable(obj, {
     __index = function(_, key)
-      return impromptu.memory[session][key]
+      return impromptu.sessions[session][key]
     end,
     __newindex = function(_, key, value)
-      impromptu.memory[session][key] = value
+      impromptu.sessions[session][key] = value
     end})
 
-  obj.session = session
+  obj.session_id = session
 
   return obj
 end
@@ -151,7 +151,7 @@ impromptu.ll.get_footer = function(obj)
        "map <buffer> " ..
        v.key ..
        " <Cmd>lua require('impromptu').core.callback("  ..
-       obj.session ..
+       obj.session_id ..
        ", '" ..
        v.item ..
        "')<CR>"
@@ -209,7 +209,7 @@ impromptu.core.destroy = function(obj_or_session)
   if type(obj_or_session) == "table" then
     obj = obj_or_session
   else
-    obj = impromptu.memory[obj_or_session]
+    obj = impromptu.sessions[obj_or_session]
   end
 
   local window = math.floor(nvim.nvim_call_function("bufwinnr", {obj.buffer}))
@@ -253,7 +253,7 @@ impromptu.core.tree = function(session, option)
 end
 
 impromptu.core.callback = function(session, option)
-  local obj = impromptu.memory[session]
+  local obj = impromptu.sessions[session]
   local should_close
 
   if obj == nil then
