@@ -4,6 +4,10 @@
 2. [API](#api)
   1. [impromptu.core.ask](#impromptu.core.ask)
 3. [Data Structures](#data-structures)
+  1. [ask_args](#ask_args)
+  2. [handler](#handler)
+  3. [session](#session)
+  4. [options](#options)
 
 ## What is impromptu?
 
@@ -20,9 +24,6 @@ Below are described the public functions of the impromptu API:
 Is a function that takes [`ask_args`](#ask_args) and returns a [`session`](#session).
 Produces a menu on the bottom of the currend window with a header and the supplied options.
 It can produce a [tree-based menu](tree-based.md) if options contain children.
-
-
-
 
 ## Data Structures
 
