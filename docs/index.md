@@ -2,12 +2,12 @@
 
 1. [What is impromptu](#what-is-impromptu?)
 2. [API](#api)
-  1. [impromptu.core.ask](#impromptu.core.ask)
+    1. [impromptu.core.ask](#impromptu.core.ask)
 3. [Data Structures](#data-structures)
-  1. [ask_args](#ask_args)
-  2. [handler](#handler)
-  3. [session](#session)
-  4. [options](#options)
+    1. [ask_args](#ask_args)
+    2. [handler](#handler)
+    3. [session](#session)
+    4. [options](#options)
 
 ## What is impromptu?
 
