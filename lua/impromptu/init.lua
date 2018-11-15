@@ -81,6 +81,7 @@ impromptu.ll.get_options = function(obj)
     selected[key] = 1
 
     line.key = key
+    line.item = line.item or line.key_name
     return line
   end
 
@@ -100,7 +101,7 @@ impromptu.ll.get_options = function(obj)
   local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
 
   if #line_lvl == 0 then
-    line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "item"), function(i) return i.description end)
+    line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "key_name"), function(i) return i.description end)
   end
 
   for _, line in ipairs(line_lvl) do
