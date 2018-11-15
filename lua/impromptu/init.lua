@@ -200,7 +200,11 @@ impromptu.ll.render = function(obj)
   impromptu.ll.do_mappings(obj, opts)
   local content = impromptu.ll.draw(obj, opts, window_ops)
 
+  nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
+  nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
   nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
+  nvim.nvim_buf_set_option(obj.buffer, "modifiable", false)
+  nvim.nvim_buf_set_option(obj.buffer, "readonly", true)
 end
 
 impromptu.core.destroy = function(obj_or_session)
