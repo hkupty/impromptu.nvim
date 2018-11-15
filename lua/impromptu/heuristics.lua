@@ -51,6 +51,14 @@ heuristics.get_unique_key = function(selected, word)
       return match
     end
   end
+
+  -- Fallback. return unique key that is optimal but not in the word.
+  for _, patterns in ipairs(heatmap) do
+    local optimal = difference(patterns, keys(selected))
+    if #optimal > 0 then
+      return optimal[1]
+    end
+  end
 end
 
 return heuristics
