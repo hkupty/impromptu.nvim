@@ -36,7 +36,7 @@ end
 
 impromptu.ll.show = function(obj)
   if obj.buffer == nil then
-    nvim.nvim_command("belowright 8 new | setl nonu nornu nobuflisted buftype=nofile bufhidden=wipe")
+    nvim.nvim_command("belowright 15 new | setl nonu nornu nobuflisted buftype=nofile bufhidden=wipe")
     local cb = nvim.nvim_get_current_buf()
     obj.buffer = cb
   end
@@ -102,6 +102,11 @@ impromptu.ll.get_options = function(obj)
 
   if #line_lvl == 0 then
     line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "key_name"), function(i) return i.description end)
+  end
+
+  if #line_lvl > 12 then
+    -- TODO fallback to fuzzy finder when available
+    nvim.nvim_err_writeln("More than 12 items on the list. Visualization won't be optimal")
   end
 
   for _, line in ipairs(line_lvl) do

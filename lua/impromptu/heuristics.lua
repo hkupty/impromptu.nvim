@@ -9,7 +9,7 @@ local heatmap = {
   {"a", "l", "t", "c", "n"},
   {"w", "x", "u", "m", "q", "z", "o", "p", ";",  ".", ",", "[", "]"},
   {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="},
-  {"A", "S", "D", "F", "G", "H", "J", "K", "L", ":"},
+  {"A", "S", "D", "F", "G", "H", "J", "K", "L"},
   {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?"},
   {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "\\", "|"},
 }
@@ -46,9 +46,12 @@ local difference = function(a, b)
 
 heuristics.get_unique_key = function(selected, word)
   for _, patterns in ipairs(heatmap) do
-    local match = string.match(word, to_rx(difference(patterns, keys(selected))))
-    if match ~= nil then
-      return match
+    local possible = difference(patterns, keys(selected))
+    if #possible > 0 then
+      local match = string.match(word, to_rx(possible))
+      if match ~= nil then
+        return match
+      end
     end
   end
 
