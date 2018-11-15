@@ -46,9 +46,12 @@ local difference = function(a, b)
 
 heuristics.get_unique_key = function(selected, word)
   for _, patterns in ipairs(heatmap) do
-    local match = string.match(word, to_rx(difference(patterns, keys(selected))))
-    if match ~= nil then
-      return match
+    local possible = difference(patterns, keys(selected))
+    if #possible > 0 then
+      local match = string.match(word, to_rx(possible))
+      if match ~= nil then
+        return match
+      end
     end
   end
 
