@@ -131,8 +131,18 @@ impromptu.ll.get_header = function(obj)
     header = obj.header
 
     if #obj.breadcrumbs >= 1 then
-       header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
-     end
+      local pointer = {}
+      local descrs = {}
+      for _, v in ipairs(obj.breadcrumbs) do
+        table.insert(pointer, v)
+        local at = utils.get_in(obj.lines, pointer)
+        if at ~= nil then
+          table.insert(descrs, at.description)
+        end
+        table.insert(pointer, "children")
+      end
+      header = header .. " [" .. table.concat(descrs, "/") .. "]"
+    end
   end
 
    return header
