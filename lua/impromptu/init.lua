@@ -129,11 +129,11 @@ impromptu.ll.get_header = function(obj)
 
   if obj.header ~= nil then
     header = obj.header
-  end
 
-  if #obj.breadcrumbs >= 1 then
-     header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
-   end
+    if #obj.breadcrumbs >= 1 then
+       header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
+     end
+  end
 
    return header
  end
