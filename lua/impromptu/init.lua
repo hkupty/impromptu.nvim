@@ -4,14 +4,12 @@ local nvim = vim.api
 local utils = require("impromptu.utils")
 local heuristics = require("impromptu.heuristics")
 
-
 local impromptu = {
   config = {},
   sessions = {},
   ll = {},
   core = {}
 }
-
 
 setmetatable(impromptu.sessions, utils.LRU(impromptu.config.lru_size or 10))
 
@@ -81,7 +79,6 @@ impromptu.ll.get_options = function(obj)
     selected[key] = 1
 
     line.key = key
-    line.item = line.item or line.key_name
     return line
   end
 
@@ -98,11 +95,12 @@ impromptu.ll.get_options = function(obj)
     selected.q = 1
   end
 
-  local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
-
-  if #line_lvl == 0 then
-    line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "key_name"), function(i) return i.description end)
-  end
+  local line_lvl = utils.chain(obj.breadcrumbs,
+    utils.partial_last(utils.interleave, "children"),
+    utils.partial(utils.get_in, obj.lines),
+    utils.partial_last(utils.key_to_attr, "item"),
+    utils.partial_last(utils.sorted_by, function(i) return i.description end)
+  )
 
   if #line_lvl > 12 then
     -- TODO fallback to fuzzy finder when available

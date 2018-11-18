@@ -101,4 +101,28 @@ utils.sorted_by = function(tbl, acc_fn)
   return new
 end
 
+
+utils.partial = function(fn, ...)
+  local args = {...}
+  return function(...)
+    return fn(unpack(args), ...)
+  end
+end
+
+utils.partial_last = function(fn, ...)
+  local args = {...}
+  return function(...)
+    return fn(..., unpack(args))
+  end
+end
+
+utils.chain = function(v, ...)
+  local fns = {...}
+  local nv = utils.clone(v)
+  for _, fn in ipairs(fns) do
+    nv = fn(nv)
+  end
+  return nv
+end
+
 return utils
