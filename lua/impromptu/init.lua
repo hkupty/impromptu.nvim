@@ -74,7 +74,7 @@ end
 impromptu.ll.get_options = function(obj)
   local opts = {}
   local selected = {}
-  local process = function(line)
+  local set_key = function(line)
     local key = line.key or heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
@@ -95,31 +95,30 @@ impromptu.ll.get_options = function(obj)
     selected.q = 1
   end
 
-  local line_lvl = utils.chain(obj.breadcrumbs,
+  local lines = utils.chain(obj.breadcrumbs,
     utils.partial_last(utils.interleave, "children"),
     utils.partial(utils.get_in, obj.lines),
     utils.partial_last(utils.key_to_attr, "item"),
-    utils.partial_last(utils.sorted_by, function(i) return i.description end)
+    utils.partial_last(utils.sorted_by, function(i) return i.description end),
+    utils.partial_last(utils.map, set_key)
   )
 
-  if #line_lvl > 12 then
+  lines = utils.extend({opts, lines})
+
+  if #lines > 12 then
     -- TODO fallback to fuzzy finder when available
     nvim.nvim_err_writeln("More than 12 items on the list. Visualization won't be optimal")
   end
 
-  for _, line in ipairs(line_lvl) do
-    table.insert(opts, process(line))
-  end
-
   if obj.quitable then
-    table.insert(opts, {
+    table.insert(lines, {
       key = "q",
       item = "__quit",
       description = "Close this prompt",
     })
   end
 
-  return opts
+  return lines
 end
 
 impromptu.ll.get_header = function(obj)

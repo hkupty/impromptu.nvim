@@ -29,15 +29,15 @@ test_functions.mutating = function()
         session.lines.exit.children = {
           now = {
             description = "Now we're talking",
-            item = "rabbit-hole"
           }
         }
-      elseif opt == "rabbit-hole" then
+      elseif opt == "now" then
         table.remove(session.breadcrumbs, #session.breadcrumbs)
         session.lines.finally = {
           description = "The light! Quick! Come here!",
-          item = "__quit"
         }
+      elseif opt == "finally" then
+        return true
       end
       return false
     end
