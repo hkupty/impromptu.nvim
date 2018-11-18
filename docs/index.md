@@ -73,10 +73,8 @@ See also: [options](#options) and [handler](#handler)
 ### options
 ```lua
 options = {
-  [[The set of options provided for the menu.
-  Can be either a list or a tree.]],
+  [[The set of options provided for the menu.]],
 
-  -- Its values can be represented as a key-val map:
   option_key = {
     description = "Required. The description of the option",
     key = "Optional argument. Value will be inferred trying to find the best key based on the description",
