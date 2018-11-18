@@ -4,14 +4,12 @@ local nvim = vim.api
 local utils = require("impromptu.utils")
 local heuristics = require("impromptu.heuristics")
 
-
 local impromptu = {
   config = {},
   sessions = {},
   ll = {},
   core = {}
 }
-
 
 setmetatable(impromptu.sessions, utils.LRU(impromptu.config.lru_size or 10))
 
@@ -76,12 +74,11 @@ end
 impromptu.ll.get_options = function(obj)
   local opts = {}
   local selected = {}
-  local process = function(line)
+  local set_key = function(line)
     local key = line.key or heuristics.get_unique_key(selected, line.description)
     selected[key] = 1
 
     line.key = key
-    line.item = line.item or line.key_name
     return line
   end
 
@@ -98,30 +95,30 @@ impromptu.ll.get_options = function(obj)
     selected.q = 1
   end
 
-  local line_lvl = utils.get_in(obj.lines, utils.interleave(obj.breadcrumbs, 'children'))
+  local lines = utils.chain(obj.breadcrumbs,
+    utils.partial_last(utils.interleave, "children"),
+    utils.partial(utils.get_in, obj.lines),
+    utils.partial_last(utils.key_to_attr, "item"),
+    utils.partial_last(utils.sorted_by, function(i) return i.description end),
+    utils.partial_last(utils.map, set_key)
+  )
 
-  if #line_lvl == 0 then
-    line_lvl = utils.sorted_by(utils.key_to_attr(line_lvl, "key_name"), function(i) return i.description end)
-  end
+  lines = utils.extend({opts, lines})
 
-  if #line_lvl > 12 then
+  if #lines > 12 then
     -- TODO fallback to fuzzy finder when available
     nvim.nvim_err_writeln("More than 12 items on the list. Visualization won't be optimal")
   end
 
-  for _, line in ipairs(line_lvl) do
-    table.insert(opts, process(line))
-  end
-
   if obj.quitable then
-    table.insert(opts, {
+    table.insert(lines, {
       key = "q",
       item = "__quit",
       description = "Close this prompt",
     })
   end
 
-  return opts
+  return lines
 end
 
 impromptu.ll.get_header = function(obj)
@@ -129,11 +126,21 @@ impromptu.ll.get_header = function(obj)
 
   if obj.header ~= nil then
     header = obj.header
-  end
 
-  if #obj.breadcrumbs >= 1 then
-     header = header .. " [" ..table.concat(obj.breadcrumbs, "/") .. "]"
-   end
+    if #obj.breadcrumbs >= 1 then
+      local pointer = {}
+      local descrs = {}
+      for _, v in ipairs(obj.breadcrumbs) do
+        table.insert(pointer, v)
+        local at = utils.get_in(obj.lines, pointer)
+        if at ~= nil then
+          table.insert(descrs, at.description)
+        end
+        table.insert(pointer, "children")
+      end
+      header = header .. " [" .. table.concat(descrs, "/") .. "]"
+    end
+  end
 
    return header
  end

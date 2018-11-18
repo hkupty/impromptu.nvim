@@ -1,48 +1,51 @@
 local impromptu = require("impromptu")
 local nvim = vim.api
 
-_G.test_tree = function()
+local test_functions = {}
+
+test_functions.mutating = function()
   local opts = {
-    one = {
-      description = "Item 1",
+    first = {
+      description = "First Item",
       children = {
-        eleven = {description = "Item 11"},
-        twelve = {description = "Item 12"},
-      }
-    },
-    two = {
-      description = "Item 2",
-      children = {
-        twentyone = {
-          description = "Item 21",
-          children = {
-            twohundredten = {description = "Item 210"}
-          }
-        },
-        twentytwo = {
-          description = "Item 22",
-          children = {
-            twohundredtwenty = {
-              description = "Item 220",
-              children = {
-                really = {description  = "Really?"},
-                no_way = {description  = "No way!"}
-              }
-            }
-          }
-        },
+        this = {
+          description = "This is the one"
+        }
       }
     }
   }
 
   impromptu.core.ask{
-    question = "Navigate over the tree",
+    question = "Do the mutation",
+    quitable = false,
     options = opts,
-    handler = function(_, opt)
-      print(opt)
-      return true
+    handler = function(session, opt)
+      if opt == "this" then
+        session.lines.exit = {
+          description = "Quit here!",
+        }
+      elseif opt == "exit" then
+        session.lines.exit.description = "I fooled you! Here!"
+        session.lines.exit.children = {
+          now = {
+            description = "Now we're talking",
+          }
+        }
+      elseif opt == "now" then
+        table.remove(session.breadcrumbs, #session.breadcrumbs)
+        session.lines.finally = {
+          description = "The light! Quick! Come here!",
+        }
+      elseif opt == "finally" then
+        return true
+      end
+      return false
     end
   }
 end
 
-nvim.nvim_command("command! -nargs=0 TestTree lua test_tree()")
+_G.call_fn = function(fn)
+  test_functions[fn]()
+end
+
+nvim.nvim_command("command! -nargs=1 ImpromptuTest lua call_fn(<f-args>)")

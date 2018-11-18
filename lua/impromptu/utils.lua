@@ -101,4 +101,67 @@ utils.sorted_by = function(tbl, acc_fn)
   return new
 end
 
+utils.partial = function(fn, ...)
+  local args = {...}
+  return function(...)
+    return fn(unpack(args), ...)
+  end
+end
+
+utils.partial_last = function(fn, ...)
+  local args = {...}
+  return function(...)
+    return fn(..., unpack(args))
+  end
+end
+
+utils.chain = function(v, ...)
+  local fns = {...}
+  local nv = utils.clone(v)
+  for _, fn in ipairs(fns) do
+    nv = fn(nv)
+  end
+  return nv
+end
+
+utils.map = function(tbl, fn)
+  local new = {}
+
+  for _, v in ipairs(tbl) do
+    table.insert(new, fn(v))
+  end
+
+  return new
+end
+
+utils.tap = function(tbl)
+  print(require("inspect")(tbl))
+  return tbl
+end
+
+utils.merge = function(...)
+  local new = {}
+
+  for _, tbl in ipairs(...) do
+    for k, v in pairs(tbl) do
+      new[k] = v
+    end
+  end
+
+  return new
+end
+
+utils.extend = function(tbls)
+  local new = {}
+
+  for _, tbl in ipairs(tbls) do
+    for _, v in ipairs(tbl) do
+      table.insert(new, v)
+    end
+  end
+
+
+  return new
+end
+
 return utils
