@@ -287,6 +287,7 @@ impromptu.core.ask = function(args)
   obj.breadcrumbs = {}
   obj.lines = args.options
   obj.handler = args.handler
+  obj.type = "ask"
 
   obj = impromptu.ll.render(obj)
 
