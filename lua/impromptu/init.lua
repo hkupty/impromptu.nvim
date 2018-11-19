@@ -162,7 +162,7 @@ impromptu.ll.get_footer = function(obj)
      nvim.nvim_command(
        "map <buffer> " ..
        v.key ..
-       " <Cmd>lua require('impromptu').core.callback("  ..
+       " <Cmd>lua require('impromptu').ll.callback("  ..
        obj.session_id ..
        ", '" ..
        v.item ..
@@ -219,7 +219,7 @@ impromptu.ll.render = function(obj)
   nvim.nvim_buf_set_option(obj.buffer, "readonly", true)
 end
 
-impromptu.core.destroy = function(obj_or_session)
+impromptu.ll.destroy = function(obj_or_session)
   local obj
 
   if type(obj_or_session) == "table" then
@@ -232,21 +232,7 @@ impromptu.core.destroy = function(obj_or_session)
   nvim.nvim_command(window .. ' wincmd w | q')
 end
 
-impromptu.core.ask = function(args)
-  local obj = new_obj()
-
-  obj.quitable = utils.default(args.quitable, true)
-  obj.header = args.question
-  obj.breadcrumbs = {}
-  obj.lines = args.options
-  obj.handler = args.handler
-
-  obj = impromptu.ll.render(obj)
-
-  return obj
-end
-
-impromptu.core.tree = function(session, option)
+impromptu.ll.tree = function(session, option)
 
   local breadcrumbs = utils.clone(session.breadcrumbs)
 
@@ -268,7 +254,7 @@ impromptu.core.tree = function(session, option)
   end
 end
 
-impromptu.core.callback = function(session, option)
+impromptu.ll.callback = function(session, option)
   local obj = impromptu.sessions[session]
   local should_close
 
@@ -276,21 +262,36 @@ impromptu.core.callback = function(session, option)
     -- TODO warning
      return
   elseif option == "__quit" then
-    impromptu.core.destroy(obj)
+    impromptu.ll.destroy(obj)
     return
   end
 
-  if impromptu.core.tree(obj, option) then
+  if impromptu.ll.tree(obj, option) then
     should_close = false
   else
     should_close = obj:handler(option)
   end
 
   if should_close then
-    impromptu.core.destroy(obj)
+    impromptu.ll.destroy(obj)
   else
     impromptu.ll.render(obj)
   end
 end
+
+impromptu.core.ask = function(args)
+  local obj = new_obj()
+
+  obj.quitable = utils.default(args.quitable, true)
+  obj.header = args.question
+  obj.breadcrumbs = {}
+  obj.lines = args.options
+  obj.handler = args.handler
+
+  obj = impromptu.ll.render(obj)
+
+  return obj
+end
+
 
 return impromptu
