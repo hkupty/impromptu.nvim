@@ -15,10 +15,11 @@ test_functions.mutating = function()
     }
   }
 
-  impromptu.core.ask{
+  impromptu.ask{
     question = "Do the mutation",
     quitable = false,
     options = opts,
+    columns = 5,
     handler = function(session, opt)
       if opt == "this" then
         session.lines.exit = {
