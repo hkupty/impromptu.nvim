@@ -1,4 +1,4 @@
--- luacheck: globals unpack vim utf8
+-- luacheck: globals unpack vim
 local nvim = vim.api
 
 local utils = require("impromptu.utils")
@@ -56,7 +56,7 @@ impromptu.ll.line = function(opts, columns, width)
       local k = opts[ix * j]
       if k ~= nil then
         local line = opt_to_line(k)
-        local padding = column_width - utf8.len(line)
+        local padding = column_width - utils.displaywidth(line, 0)
         table.insert(ln, line .. string.rep(" ", padding))
       end
     end
