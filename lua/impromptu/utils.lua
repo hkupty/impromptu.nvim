@@ -164,4 +164,8 @@ utils.extend = function(tbls)
   return new
 end
 
+utils.displaywidth = function(expr, col)
+  return vim.api.nvim_call_function('strdisplaywidth', { expr, col })
+end
+
 return utils
