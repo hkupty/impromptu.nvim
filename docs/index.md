@@ -35,6 +35,7 @@ All data types are supplied here:
 ```lua
 args = {
   quitable = "Optional argument (default: true). If true, adds a quit option to the menu",
+  columns = "Optional argument (default: 1). Number of columns to show the options",
   question = "The title of the menu",
   options = "Set of options to be displayed", -- Check options below
   handler = "A handler function that takes the session and the chosen option" -- Check handler and session below

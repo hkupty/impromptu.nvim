@@ -1,4 +1,4 @@
--- luacheck: globals unpack vim
+-- luacheck: globals unpack vim utf8
 local nvim = vim.api
 
 local utils = require("impromptu.utils")
@@ -34,7 +34,8 @@ end
 
 impromptu.ll.show = function(obj)
   if obj.buffer == nil then
-    nvim.nvim_command("belowright 15 new | setl nonu nornu nobuflisted buftype=nofile bufhidden=wipe")
+    nvim.nvim_command("belowright 15 new")
+    nvim.nvim_command("setl nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist")
     local cb = nvim.nvim_get_current_buf()
     obj.buffer = cb
   end
@@ -42,10 +43,27 @@ impromptu.ll.show = function(obj)
   return obj
 end
 
-impromptu.ll.line = function(line)
-    local str = "  [" .. line.key .. "] " .. line.description
+impromptu.ll.line = function(opts, columns, width)
+  local opt_to_line = function(line)
+    return  "  [" .. line.key .. "] " .. line.description
+  end
+  local lines = {}
+  local column_width = math.floor(width / columns)
 
-    return str
+  for ix = 1, #opts + (#opts - 1) % columns, columns do
+    local ln = {}
+    for j = 1, columns do
+      local k = opts[ix * j]
+      if k ~= nil then
+        local line = opt_to_line(k)
+        local padding = column_width - utf8.len(line)
+        table.insert(ln, line .. string.rep(" ", padding))
+      end
+    end
+    table.insert(lines, table.concat(ln, ""))
+  end
+
+    return lines
 end
 
 impromptu.ll.div = function(sz)
@@ -74,11 +92,9 @@ end
 impromptu.ll.get_options = function(obj)
   local opts = {}
   local selected = {}
-  local set_key = function(line)
-    local key = line.key or heuristics.get_unique_key(selected, line.description)
-    selected[key] = 1
 
-    line.key = key
+  local set_key = function(line)
+    line.key = line.key or heuristics.get_unique_key(selected, line.description)
     return line
   end
 
@@ -99,11 +115,17 @@ impromptu.ll.get_options = function(obj)
     utils.partial_last(utils.interleave, "children"),
     utils.partial(utils.get_in, obj.lines),
     utils.partial_last(utils.key_to_attr, "item"),
-    utils.partial_last(utils.sorted_by, function(i) return i.description end),
-    utils.partial_last(utils.map, set_key)
+    utils.partial_last(utils.sorted_by, function(i) return i.description end)
   )
 
-  lines = utils.extend({opts, lines})
+  utils.map(lines, function(line)
+    if line.key then
+      selected[line.key] = 1
+    end
+    return nil
+  end)
+
+  lines = utils.extend({opts, utils.map(lines, set_key)})
 
   if #lines > 12 then
     -- TODO fallback to fuzzy finder when available
@@ -185,8 +207,8 @@ impromptu.ll.draw = function(obj, opts, window_ops)
 
   table.insert(content, "")
 
-  for _, opt in ipairs(opts) do
-    table.insert(content, impromptu.ll.line(opt))
+  for _, line in ipairs(impromptu.ll.line(opts, obj.columns, window_ops.width)) do
+    table.insert(content, line)
   end
 
   if #content + footer_sz < window_ops.height then
@@ -287,6 +309,7 @@ impromptu.core.ask = function(args)
   obj.breadcrumbs = {}
   obj.lines = args.options
   obj.handler = args.handler
+  obj.columns = utils.default(args.columns, 1)
   obj.type = "ask"
 
   obj = impromptu.ll.render(obj)
