@@ -11,19 +11,19 @@
 
 ## What is impromptu?
 
-Impromptu is a library for using within neovim. It allows you to build menus or to prompt the user for information.
+Impromptu is a library for usage within neovim. It allows you to build menus or to prompt the user for information.
 
 It is designed to be generic and with a simple architecture to allow any kind of menus/customizations.
 
 ## API
 
-Below are described the public functions of the impromptu API:
+Below is the public function of the impromptu API:
 
 ### impromptu.core.ask
 
-Is a function that takes [`ask_args`](#ask_args) and returns a [`session`](#session).
-Produces a menu on the bottom of the currend window with a header and the supplied options.
-It can produce a [tree-based menu](tree-based.md) if options contain children.
+A function that takes [`ask_args`](#ask_args) and returns a [`session`](#session).
+Opens a new window containing a header and the menu from the supplied [`ask_args`](#ask_args).
+The menu is [tree-based](tree-based.md) if the [`options`](#options) table contains children.
 
 You can look at a [complete example](sample.md) to have a better idea.
 
@@ -34,52 +34,55 @@ All data types are supplied here:
 ### ask_args
 ```lua
 args = {
-  quitable = "Optional argument (default: true). If true, adds a quit option to the menu",
-  columns = "Optional argument (default: 1). Number of columns to show the options",
-  question = "The title of the menu",
-  options = "Set of options to be displayed", -- Check options below
-  handler = "A handler function that takes the session and the chosen option" -- Check handler and session below
+  quitable = "Optional (default: true). If true, adds a quit option to the menu",
+  columns = "Optional (default: 1). Number of columns to show the options",
+  question = "Optional (default: ''). The title of the menu",
+  options = "Mandatory. Set of options to be displayed", -- Check options below
+  handler = "Mandatory. Function taking the session and the chosen option. For tree-based menus only called for the leaf nodes." -- Check handler and session below
 }
 ```
-See also: [handler](#handler), [session](#session) and [options](#options)
+See also: [handler](#handler), [session](#session) and [options](#options).
 
 ### handler
 ```lua
 handler = {
   args = {
     session = "The state of the current menu prompt", -- See session below
-    option = "The selected `item` value of the provieded options" -- See options below
+    option = "The selected `option_key` value of chosen menu option" -- See options below
   },
-  expected_behavion = "Should cause the desired side-effect with supplied args",
+  expected_behavior = "Should cause the desired side-effect with supplied args",
   returns = "A boolean representing whether the menu should be closed or not"
 }
 ```
-See also: [session](#session) and [options](#options)
+See also: [session](#session) and [options](#options).
+
+If the handler function needs information from the buffer that was in use before opening the menu, construct the variables containing this information in the scope outside of `ask_args`, and use it as an upvalue in `handler`. See the [example](sample.md) and the usage of the variable `ft` therein.
+
 
 ### session
+A proxy to the `impromptu.sessions` table.  Contains all the information regarding the state of the menu.
+
 ```lua
 session = {
-  [[A proxy to the `impromptu.sessions` table.
-  Contains all the information regarding the state of the menu.]],
-  session_id = "The number of the session on the impromptu.sessions table",
-  quitable = "Whether an extra option for quiting should be provided",
-  header = "The header value of the session",
-  breadcrumbs = "When traversing tree-based options, this value is populated with the selected path",
-  lines = "The options list (or tree)", -- See options below
-  handler = "The handler function for this session" -- See handler above
+  session_id = "Number. The number of the session on the impromptu.sessions table",
+  quitable = "Boolean. Whether an extra option for quiting should be provided",
+  header = "String. The header value of the session",
+  breadcrumbs = "Array of Strings. When traversing tree-based options, for each selection that results in another menu, the `option_key` of the selected entry is appended to this, describing a path through the tree.",
+  lines = "Table. The options list (or tree)", -- See options below
+  handler = "Function. The handler function for this session" -- See handler above
 }
 ```
-See also: [options](#options) and [handler](#handler)
+See also: [options](#options) and [handler](#handler).
 
 ### options
+The set of options provided for the menu.
+
 ```lua
 options = {
-  [[The set of options provided for the menu.]],
-
   option_key = {
-    description = "Required. The description of the option",
-    key = "Optional argument. Value will be inferred trying to find the best key based on the description",
-    children = "Optional argument that takes the same structure as `options`."
+    description = "Mandatory. A string describing the option in the menu.",
+    key = "Optional. A key (=character) to be pressed to select this menu entry. Value will be inferred trying to find the best key based on the description",
+    children = "Optional. Table of the same structure as `options`, describing submenus."
   }
 
 }
