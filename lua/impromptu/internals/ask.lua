@@ -90,11 +90,6 @@ ask.get_options = function(obj)
 
   lines = utils.extend({opts, utils.map(lines, set_key)})
 
-  if #lines > 12 then
-    -- TODO fallback to fuzzy finder when available
-    nvim.nvim_err_writeln("More than 12 items on the list. Visualization won't be optimal")
-  end
-
   if obj.quitable then
     table.insert(lines, {
       key = "q",
