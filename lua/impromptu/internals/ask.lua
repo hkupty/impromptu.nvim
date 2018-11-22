@@ -2,22 +2,33 @@
 local nvim = vim.api
 local utils = require("impromptu.utils")
 local heuristics = require("impromptu.heuristics")
-local sessions = require("impromptu.sessions")
+local shared = require("impromptu.internals.shared")
 
-local internals = {}
+local ask = {}
 
-internals.show = function(obj)
-  if obj.buffer == nil then
-    nvim.nvim_command("belowright 15 new")
-    nvim.nvim_command("setl nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist")
-    local cb = nvim.nvim_get_current_buf()
-    obj.buffer = cb
+
+ask.tree = function(session, option)
+  local breadcrumbs = utils.clone(session.breadcrumbs)
+
+  if option == "__up" then
+    breadcrumbs[#breadcrumbs] = nil
+  else
+    table.insert(breadcrumbs, option)
   end
 
-  return obj
+  local lens = utils.interleave(breadcrumbs, 'children')
+
+  local at = utils.get_in(session.lines, lens)
+
+  if at ~= nil then
+    session.breadcrumbs = breadcrumbs
+    return true
+  else
+    return false
+  end
 end
 
-internals.line = function(opts, columns, width)
+ask.line = function(opts, columns, width)
   local opt_to_line = function(line)
     return  "  [" .. line.key .. "] " .. line.description
   end
@@ -40,35 +51,13 @@ internals.line = function(opts, columns, width)
     return lines
 end
 
-internals.div = function(sz)
-  return string.rep("─", sz)
-end
-
-internals.sub_div = function(sz)
-  return string.rep("•", sz)
-end
-
-internals.window_for_obj = function(obj)
-  obj = internals.show(obj)
-
-  local winnr = nvim.nvim_call_function("bufwinnr", {obj.buffer})
-  local window = nvim.nvim_call_function("win_getid", {winnr})
-  local sz = nvim.nvim_win_get_width(window)
-  local h = nvim.nvim_win_get_height(window)
-
-  return {
-    window = window,
-    width = sz,
-    height = h
-  }
-end
-
-internals.get_options = function(obj)
+ask.get_options = function(obj)
   local opts = {}
   local selected = {}
 
   local set_key = function(line)
     line.key = line.key or heuristics.get_unique_key(selected, line.description)
+    selected[line.key] = 1
     return line
   end
 
@@ -117,7 +106,7 @@ internals.get_options = function(obj)
   return lines
 end
 
-internals.get_header = function(obj)
+ask.get_header = function(obj)
   local header = ""
 
   if obj.header ~= nil then
@@ -141,17 +130,7 @@ internals.get_header = function(obj)
    return header
  end
 
-internals.get_footer = function(obj)
-  local footer = ""
-
-  if obj.footer ~= nil then
-    footer = obj.footer
-  end
-
-   return footer
- end
-
- internals.do_mappings = function(obj, opts)
+ ask.do_mappings = function(obj, opts)
   nvim.nvim_command("mapclear <buffer>")
 
    for _, v in ipairs(opts) do
@@ -167,46 +146,40 @@ internals.get_footer = function(obj)
    end
  end
 
-internals.draw = function(obj, opts, window_ops)
-  local header = internals.get_header(obj)
-  local footer = internals.get_footer(obj)
-  local footer_sz = footer ~= "" and 2 or 1
+ask.draw = function(obj, opts, window_ops)
+  local header = ask.get_header(obj)
 
   local content = {}
 
   if header ~= "" then
     table.insert(content, header)
-    table.insert(content, internals.div(window_ops.width))
+    table.insert(content, shared.div(window_ops.width))
   end
 
   table.insert(content, "")
 
-  for _, line in ipairs(internals.line(opts, obj.columns, window_ops.width)) do
+  for _, line in ipairs(ask.line(opts, obj.columns, window_ops.width)) do
     table.insert(content, line)
   end
 
-  if #content + footer_sz < window_ops.height then
-    local fill = window_ops.height - #content  - footer_sz
+  if #content < window_ops.height then
+    local fill = window_ops.height - #content
     for _ = 1, fill do
       table.insert(content, "")
     end
   end
 
-  if footer ~= "" then
-    table.insert(content, internals.div(window_ops.width))
-    table.insert(content, footer)
-  end
-
   return content
  end
 
-internals.render = function(obj)
+ask.render = function(obj)
 
-  local opts = internals.get_options(obj)
-  local window_ops = internals.window_for_obj(obj)
+  local opts = ask.get_options(obj)
+  local window_ops = shared.window_for_obj(obj)
+  local content
 
-  internals.do_mappings(obj, opts)
-  local content = internals.draw(obj, opts, window_ops)
+  ask.do_mappings(obj, opts)
+  content = ask.draw(obj, opts, window_ops)
 
   nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
   nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
@@ -215,38 +188,12 @@ internals.render = function(obj)
   nvim.nvim_buf_set_option(obj.buffer, "readonly", true)
 end
 
-internals.destroy = function(obj_or_session)
-  local obj
-
-  if type(obj_or_session) == "table" then
-    obj = obj_or_session
-  else
-    obj = sessions[obj_or_session]
-  end
-
-  local window = math.floor(nvim.nvim_call_function("bufwinnr", {obj.buffer}))
-  nvim.nvim_command(window .. ' wincmd w | q')
-end
-
-internals.tree = function(session, option)
-  local breadcrumbs = utils.clone(session.breadcrumbs)
-
-  if option == "__up" then
-    breadcrumbs[#breadcrumbs] = nil
-  else
-    table.insert(breadcrumbs, option)
-  end
-
-  local lens = utils.interleave(breadcrumbs, 'children')
-
-  local at = utils.get_in(session.lines, lens)
-
-  if at ~= nil then
-    session.breadcrumbs = breadcrumbs
-    return true
-  else
+ask.handle = function(obj, option)
+  if ask.tree(obj, option) then
     return false
+  else
+    return obj:handler(option)
   end
 end
 
-return internals
+return ask

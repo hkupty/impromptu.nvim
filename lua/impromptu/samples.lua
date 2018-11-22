@@ -1,7 +1,25 @@
+-- luacheck: globals unpack vim utf8
 local impromptu = require("impromptu")
 local nvim = vim.api
 
 local test_functions = {}
+
+test_functions.form = function()
+
+  impromptu.form{
+    question = "Answer:",
+    questions = {
+      twotwo = {
+        description = "2 + 2"
+      }
+    },
+    handler = function(_, ret_obj)
+      print("Result is .. " .. ret_obj.twotwo == 4)
+      return true
+    end
+  }
+end
+
 
 test_functions.mutating = function()
   local opts = {
@@ -44,6 +62,7 @@ test_functions.mutating = function()
     end
   }
 end
+
 
 _G.call_fn = function(fn)
   test_functions[fn]()

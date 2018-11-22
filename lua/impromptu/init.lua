@@ -43,8 +43,8 @@ end
 impromptu.form = function(args)
   local obj = new_obj()
 
-  obj.header = args.question
-  obj.lines = args.options
+  obj.header = args.title
+  obj.questions = args.questions
   obj.handler = args.handler
   obj.type = "form"
 
@@ -55,23 +55,15 @@ end
 
 impromptu.callback = function(session, option)
   local obj = sessions[session]
-  local should_close
 
   if obj == nil then
-    -- TODO warning
      return
   elseif option == "__quit" then
     internals.destroy(obj)
     return
   end
 
-  if internals.tree(obj, option) then
-    should_close = false
-  else
-    should_close = obj:handler(option)
-  end
-
-  if should_close then
+  if internals.handle(obj, option) then
     internals.destroy(obj)
   else
     internals.render(obj)
