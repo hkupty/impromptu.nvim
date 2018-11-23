@@ -37,7 +37,9 @@ test_functions.mutating = function()
     question = "Do the mutation",
     quitable = false,
     options = opts,
-    columns = 5,
+    columns = function(_, copts)
+      return math.ceil(#copts / 0.8)
+    end,
     handler = function(session, opt)
       if opt == "this" then
         session.lines.exit = {

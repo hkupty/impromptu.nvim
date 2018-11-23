@@ -92,11 +92,8 @@ utils.key_to_attr = function(tbl, attr_name)
   return new
 end
 
-utils.sorted_by = function(tbl, acc_fn)
+utils.sorted_by = function(tbl, compare)
   local new = utils.clone(tbl)
-  local compare = function(a, b)
-    return acc_fn(a) < acc_fn(b)
-  end
   table.sort(new, compare)
   return new
 end

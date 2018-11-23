@@ -1,12 +1,12 @@
 -- luacheck: globals unpack vim utf8
 local nvim = vim.api
-local utils = require("impromptu.utils")
 local sessions = require("impromptu.sessions")
 local internals = {
   types = {
     ask = require("impromptu.internals.ask"),
     form = require("impromptu.internals.form")
-  }
+  },
+  shared = require("impromptu.internals.shared")
 }
 
 internals.destroy = function(obj_or_session)

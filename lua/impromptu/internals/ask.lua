@@ -78,7 +78,7 @@ ask.get_options = function(obj)
     utils.partial_last(utils.interleave, "children"),
     utils.partial(utils.get_in, obj.lines),
     utils.partial_last(utils.key_to_attr, "item"),
-    utils.partial_last(utils.sorted_by, function(i) return i.description end)
+    utils.partial_last(utils.sorted_by, obj.sort)
   )
 
   utils.map(lines, function(line)
@@ -153,7 +153,17 @@ ask.draw = function(obj, opts, window_ops)
 
   table.insert(content, "")
 
-  for _, line in ipairs(ask.line(opts, obj.columns, window_ops.width)) do
+  local columns
+
+  if type(obj.columns) == "number" then
+    columns = obj.columns
+  elseif type(obj.columns) == "function" then
+    columns = obj:columns(opts, window_ops.width)
+  else
+    columns = 1
+  end
+
+  for _, line in ipairs(ask.line(opts, columns, window_ops.width)) do
     table.insert(content, line)
   end
 

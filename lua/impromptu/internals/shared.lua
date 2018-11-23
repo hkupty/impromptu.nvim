@@ -13,7 +13,6 @@ shared.show = function(obj)
   return obj
 end
 
-
 shared.window_for_obj = function(obj)
   obj = shared.show(obj)
 
@@ -29,6 +28,9 @@ shared.window_for_obj = function(obj)
   }
 end
 
+shared.sort = function(a, b)
+    return a.description < b.description
+  end
 
 shared.div = function(sz)
   return string.rep("─", sz)
