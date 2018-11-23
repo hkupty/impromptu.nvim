@@ -1,4 +1,6 @@
--- luacheck: globals unpack vim utf8
+-- luacheck: globals unpack vim
+local nvim = vim.api
+
 local utils = require("impromptu.utils")
 local internals = require("impromptu.internals")
 local sessions = require("impromptu.sessions")
