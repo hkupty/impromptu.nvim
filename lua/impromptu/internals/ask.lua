@@ -27,12 +27,12 @@ ask.tree = function(session, option)
   end
 end
 
-ask.line = function(opts, columns, width)
+ask.line = function(opts, columns, window_ops)
   local opt_to_line = function(line)
     return  "  [" .. line.key .. "] " .. line.description
   end
   local lines = {}
-  local column_width = math.floor(width / columns)
+  local column_width = math.floor(window_ops.width / columns)
 
   for ix = 0, #opts + (#opts - 1) % columns, columns do
     local ln = {}
@@ -166,7 +166,7 @@ ask.draw = function(obj, opts, window_ops)
     columns = 1
   end
 
-  for _, line in ipairs(ask.line(opts, columns, window_ops.width)) do
+  for _, line in ipairs(ask.line(opts, columns, window_ops)) do
     table.insert(content, line)
   end
 
