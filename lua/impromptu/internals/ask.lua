@@ -41,7 +41,11 @@ ask.line = function(opts, columns, width)
       if k ~= nil then
         local line = opt_to_line(k)
         local padding = column_width - utils.displaywidth(line, 0)
-        table.insert(ln, line .. string.rep(" ", padding))
+        if j == columns or opts[ix + j + 1] == nil then
+          table.insert(ln, line)
+        else
+          table.insert(ln, line .. string.rep(" ", padding))
+        end
       end
     end
     table.insert(lines, table.concat(ln, ""))
