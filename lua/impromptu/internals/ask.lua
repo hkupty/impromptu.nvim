@@ -157,7 +157,7 @@ ask.draw = function(obj, opts, window_ops)
   if type(obj.columns) == "number" then
     columns = obj.columns
   elseif type(obj.columns) == "function" then
-    columns = obj:columns(opts, window_ops.width)
+    columns = obj:columns(opts, window_ops)
   else
     columns = 1
   end
