@@ -34,6 +34,7 @@ impromptu.ask = function(args)
   obj.handler = args.handler
   obj.sort = utils.default(args.sort, internals.shared.sort)
   obj.columns = utils.default(args.columns, 1)
+  obj.line = utils.default(args.line, internals.shared.line)
   obj.type = "ask"
 
   obj = internals.render(obj)
