@@ -6,7 +6,6 @@ local shared = require("impromptu.internals.shared")
 
 local ask = {}
 
-
 ask.tree = function(session, option)
   local breadcrumbs = utils.clone(session.breadcrumbs)
 
@@ -35,10 +34,10 @@ ask.line = function(opts, columns, width)
   local lines = {}
   local column_width = math.floor(width / columns)
 
-  for ix = 1, #opts + (#opts - 1) % columns, columns do
+  for ix = 0, #opts + (#opts - 1) % columns, columns do
     local ln = {}
     for j = 1, columns do
-      local k = opts[ix * j]
+      local k = opts[ix + j]
       if k ~= nil then
         local line = opt_to_line(k)
         local padding = column_width - utils.displaywidth(line, 0)
@@ -158,7 +157,7 @@ ask.draw = function(obj, opts, window_ops)
   if type(obj.columns) == "number" then
     columns = obj.columns
   elseif type(obj.columns) == "function" then
-    columns = obj:columns(opts, window_ops.width)
+    columns = obj:columns(opts, window_ops)
   else
     columns = 1
   end
