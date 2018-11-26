@@ -5,8 +5,8 @@ local shared = require("impromptu.internals.shared")
 
 local form = {}
 
-form.line = function(opt)
-    return  "  • " .. opt.description .. ": "
+form.line = function(key, opt)
+    return  key .. "| " .. opt.description .. ": "
 end
 
 form.get_header = function(obj)
@@ -21,10 +21,34 @@ form.get_header = function(obj)
 
  form.do_mappings = function(obj)
   nvim.nvim_command("mapclear <buffer>")
+  nvim.nvim_command(
+    "nmap <buffer> <Tab> <Cmd>lua require('impromptu').callback(" ..
+    obj.session_id ..
+    ", '__next')<CR>"
+  )
+
+  nvim.nvim_command(
+    "nmap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
+    obj.session_id ..
+    ", '__submit')<CR>"
+  )
  end
+
+form.set_cursor = function(obj, key)
+  local pos = obj.pos[key]
+  local window_ops = shared.window_for_obj(obj)
+
+  nvim.nvim_win_set_cursor(window_ops.window, pos)
+  obj.current = key
+end
 
 form.draw = function(obj, window_ops)
   local header = form.get_header(obj)
+  local first
+  local order = {}
+  local ix
+  obj.pos = {}
+  nvim.nvim_command("setl conceallevel=2 concealcursor=nvic")
 
   local content = {}
 
@@ -35,9 +59,22 @@ form.draw = function(obj, window_ops)
 
   table.insert(content, "")
 
-  for _, line in pairs(obj.questions) do
-    table.insert(content, form.line(line))
+  for key, line in pairs(obj.questions) do
+    if first == nil then
+      first = key
+    end
+
+    nvim.nvim_call_function("matchadd", {"Conceal", key .. "|", 10, -1, { conceal = "•"}})
+    local ln_str = form.line(key, line)
+    table.insert(content, ln_str)
+    obj.pos[key] = {#content, utils.displaywidth(ln_str) }
+
+    if ix ~= nil then
+      order[ix] = key
+    end
+    ix = key
   end
+  order[ix] = first
 
   if #content < window_ops.height then
     local fill = window_ops.height - #content
@@ -46,35 +83,47 @@ form.draw = function(obj, window_ops)
     end
   end
 
+  obj.order = order
+  obj.current = first
   return content
- end
-
-form.render = function(obj)
-  local window_ops = shared.window_for_obj(obj)
-
-  form.do_mappings(obj)
-  local content = form.draw(obj, window_ops)
-
-  nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
 end
 
-form.handle = function(obj, option)
+form.should_render = function(obj)
   local lines = nvim.nvim_buf_get_lines(obj.buffer, 0, -1, false)
-  local mapping = {}
+  return lines[1] == ""
+end
+
+
+form.render = function(obj)
+  if form.should_render(obj) then
+    local window_ops = shared.window_for_obj(obj)
+
+    form.do_mappings(obj)
+    local content = form.draw(obj, window_ops)
+
+    nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
+    form.set_cursor(obj, obj.current)
+  end
+end
+
+form.handle = function(obj, arg)
+  local lines = nvim.nvim_buf_get_lines(obj.buffer, 0, -1, false)
   local answers = {}
 
-  for _, v in ipairs(lines) do
-    local question, answer = v:gmatch("  • (%s+): (%s+)")
-    if question ~= nil then
-      mapping[question] = answer
+  if arg == "__submit" then
+    for _, v in ipairs(lines) do
+      local key, content = unpack(utils.split(v, "|"))
+      if content ~= nil then
+        answers[key] = utils.trim(utils.split(content, ":")[2])
+      end
     end
-  end
 
-  for k, v in pairs(obj.questsions) do
-    answers[k] = mapping[v.description]
+    return obj:handler(answers)
+  elseif arg == "__next" then
+    local nxt = obj.order[obj.current]
+    form.set_cursor(obj, nxt)
   end
-
-  return answers
+  return false
 end
 
 return form
