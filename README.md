@@ -1,6 +1,7 @@
 # impromptu.nvim
 
 [![Docs](https://readthedocs.org/projects/impromptunvim/badge/?version=latest)](http://impromptunvim.readthedocs.io/)
+[![CircleCI](https://circleci.com/gh/Vigemus/impromptu.nvim.svg?style=svg)](https://circleci.com/gh/Vigemus/impromptu.nvim)
 
 
 Create prompts fast and easy
