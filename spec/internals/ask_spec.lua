@@ -1,11 +1,5 @@
 -- luacheck: globals insulate setup describe it assert mock
 -- luacheck: globals before_each after_each
-local inspect = require("inspect")
-
-_G.tap = function(obj)
-  print(inspect(obj))
-  return obj
-end
 
 local check = {
   command = function() return assert.spy(_G.vim.api.nvim_command) end,
