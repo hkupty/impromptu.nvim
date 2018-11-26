@@ -48,7 +48,10 @@ ask.line = function(opts, columns, width)
         end
       end
     end
-    table.insert(lines, table.concat(ln, ""))
+
+    if #ln > 0 then
+      table.insert(lines, table.concat(ln, ""))
+    end
   end
 
     return lines

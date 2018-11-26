@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: abaez/luarocks:lua5.1
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: luarocks-5.1 install busted && luarocks-5.1 install luacheck
+      - run:
+          name: Unit Tests
+          command: busted
+      - run:
+          name: Linter
+          command: luacheck lua/**/*.lua
