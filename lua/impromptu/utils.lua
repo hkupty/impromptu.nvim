@@ -161,6 +161,18 @@ utils.extend = function(tbls)
   return new
 end
 
+utils.split = function(str, sep)
+   local fields = {}
+   local pattern = string.format("([^%s]+)", sep)
+   str:gsub(pattern, function(c) fields[#fields+1] = c end)
+   return fields
+end
+
+utils.trim = function(s)
+  -- http://lua-users.org/wiki/StringTrim
+  return s:match'^()%s*$' and '' or s:match'^%s*(.*%S)'
+end
+
 utils.displaywidth = function(expr, col)
   return vim.api.nvim_call_function('strdisplaywidth', { expr, col })
 end

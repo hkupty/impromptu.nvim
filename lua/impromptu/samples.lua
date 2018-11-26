@@ -7,19 +7,28 @@ local test_functions = {}
 test_functions.form = function()
 
   impromptu.form{
-    question = "Answer:",
+    title = "Answer:",
     questions = {
-      twotwo = {
-        description = "2 + 2"
+      weight = {
+        description = "The weight"
+      },
+      size = {
+        description = "The size"
       }
     },
     handler = function(_, ret_obj)
-      print("Result is .. " .. ret_obj.twotwo == 4)
+      local result
+      if ret_obj.size == "4" then
+        result = "correct"
+      else
+        result = "wrong"
+      end
+
+      print("Result is .. " .. result)
       return true
     end
   }
 end
-
 
 test_functions.mutating = function()
   local opts = {
@@ -64,7 +73,6 @@ test_functions.mutating = function()
     end
   }
 end
-
 
 _G.call_fn = function(fn)
   test_functions[fn]()
