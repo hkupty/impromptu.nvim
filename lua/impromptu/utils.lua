@@ -1,3 +1,4 @@
+-- luacheck: globals vim
 local utils = {}
 
 utils.keys = function(tbl)
