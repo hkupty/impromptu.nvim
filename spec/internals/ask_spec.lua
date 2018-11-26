@@ -47,7 +47,7 @@ insulate("About #ask form", function()
       check.call_function().was_called(#opts)
     end)
 
-    it("columnizes the items (with two)", function()
+    it("columnizes the items 2x2", function()
       local ask = require('impromptu.internals.ask')
       local opts = {
         {key = "a", description = "Option a"},
@@ -62,7 +62,7 @@ insulate("About #ask form", function()
       check.call_function().was_called(#opts)
     end)
 
-    it("columnizes the items (with three)", function()
+    it("columnizes the items 3x2", function()
       local ask = require('impromptu.internals.ask')
       local opts = {
         {key = "a", description = "Option a"},
@@ -73,6 +73,24 @@ insulate("About #ask form", function()
 
       assert.are_same({
         "  [a] Option a                [b] Option b",
+        "  [c] Option c"
+      }, lines)
+
+      check.call_function().was_called(#opts)
+    end)
+
+    it("columnizes the items 3x1", function()
+      local ask = require('impromptu.internals.ask')
+      local opts = {
+        {key = "a", description = "Option a"},
+        {key = "b", description = "Option b"},
+        {key = "c", description = "Option c"}
+      }
+      local lines = ask.line(opts, 1, 30)
+
+      assert.are_same({
+        "  [a] Option a",
+        "  [b] Option b",
         "  [c] Option c"
       }, lines)
 
