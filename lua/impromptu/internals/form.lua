@@ -50,6 +50,7 @@ form.draw = function(obj, window_ops)
   obj.pos = {}
   nvim.nvim_command("setl conceallevel=2 concealcursor=nvic")
 
+
   local content = {}
 
   if header ~= "" then
@@ -89,14 +90,14 @@ form.draw = function(obj, window_ops)
 end
 
 form.should_render = function(obj)
-  local lines = nvim.nvim_buf_get_lines(obj.buffer, 0, -1, false)
-  return lines[1] == ""
+  return obj.current == nil
 end
-
 
 form.render = function(obj)
   if form.should_render(obj) then
     local window_ops = shared.window_for_obj(obj)
+    nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
+    nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
 
     form.do_mappings(obj)
     local content = form.draw(obj, window_ops)

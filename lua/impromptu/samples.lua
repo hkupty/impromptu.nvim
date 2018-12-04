@@ -4,6 +4,43 @@ local nvim = vim.api
 
 local test_functions = {}
 
+test_functions.mixed = function()
+
+  impromptu.ask{
+    question = "Add stuff here",
+    options = {
+      add = {
+        description = "Add something"
+      }
+    },
+    quitable = true,
+    handler = function(session, _)
+      impromptu.become(session, "form", {
+          title = "Something awesome:",
+          questions = {
+              key = {
+                description = "The key"
+              },
+              value = {
+                description = "The value"
+              }
+          },
+          handler = function(inner_session, ret)
+            inner_session:pop()
+            inner_session.lines[ret.key] = {
+              description = ret.value
+            }
+            return false
+          end
+        })
+
+
+      return false
+    end
+  }
+end
+
+
 test_functions.form = function()
 
   impromptu.form{
