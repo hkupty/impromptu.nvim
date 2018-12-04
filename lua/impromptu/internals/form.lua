@@ -96,6 +96,8 @@ end
 form.render = function(obj)
   if form.should_render(obj) then
     local window_ops = shared.window_for_obj(obj)
+
+    -- FIXME: Become should cleanup type specific settings from buffer
     nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
     nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
 
