@@ -26,9 +26,20 @@ form.get_header = function(obj)
     obj.session_id ..
     ", '__next')<CR>"
   )
+  nvim.nvim_command(
+    "imap <buffer> <Tab> <Cmd>lua require('impromptu').callback(" ..
+    obj.session_id ..
+    ", '__next')<CR>"
+  )
 
   nvim.nvim_command(
     "nmap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
+    obj.session_id ..
+    ", '__submit')<CR>"
+  )
+
+  nvim.nvim_command(
+    "imap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
     obj.session_id ..
     ", '__submit')<CR>"
   )
@@ -119,6 +130,10 @@ form.handle = function(obj, arg)
       if content ~= nil then
         answers[key] = utils.trim(utils.split(content, ":")[2])
       end
+    end
+
+    if nvim.nvim_get_mode().mode ~= "n" then
+      nvim.nvim_command("stopinsert")
     end
 
     return obj:handler(answers)

@@ -3,7 +3,9 @@ local utils = require("impromptu.utils")
 local internals = require("impromptu.internals")
 local sessions = require("impromptu.sessions")
 
-local impromptu = {}
+local impromptu = {
+  session = {}
+}
 
 local proxy = function(session)
   local obj = {session_id = session}
@@ -65,20 +67,20 @@ local xf_args = {
   end
 }
 
-impromptu.become = function(obj, tp, args)
+impromptu.session.stack_into = function(obj, tp, args)
   return obj:stack(xf_args[tp](args))
 end
 
-impromptu.comback = function(obj)
+impromptu.session.pop_from = function(obj)
   return obj:pop()
 end
 
 impromptu.ask = function(args)
-  return internals.render(impromptu.become(new_obj(), "ask", args))
+  return internals.render(impromptu.session.stack_into(new_obj(), "ask", args))
 end
 
 impromptu.form = function(args)
-  return internals.render(impromptu.become(new_obj(), "form", args))
+  return internals.render(impromptu.session.stack_into(new_obj(), "form", args))
 end
 
 impromptu.callback = function(session, option)

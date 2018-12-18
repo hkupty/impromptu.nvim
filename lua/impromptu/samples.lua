@@ -15,7 +15,7 @@ test_functions.mixed = function()
     },
     quitable = true,
     handler = function(session, _)
-      impromptu.become(session, "form", {
+      impromptu.session.stack_into(session, "form", {
           title = "Something awesome:",
           questions = {
               key = {
@@ -26,7 +26,8 @@ test_functions.mixed = function()
               }
           },
           handler = function(inner_session, ret)
-            inner_session:pop()
+            impromptu.session.pop_from(inner_session)
+
             inner_session.lines[ret.key] = {
               description = ret.value
             }
