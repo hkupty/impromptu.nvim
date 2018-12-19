@@ -28,7 +28,7 @@ ask.tree = function(session, option)
 end
 
 ask.render_line = function(line)
-    return  "  [" .. line.key .. "] " .. line.description
+    return  "[" .. line.key .. "] " .. line.description
 end
 
 ask.lines_to_grid = function(opts, window_ops)
@@ -41,7 +41,7 @@ ask.lines_to_grid = function(opts, window_ops)
     for j = 1, max_sz do
       local k = opts[ix + j]
       if k ~= nil then
-        table.insert(column, k)
+        table.insert(column, "  " .. k)
       else
         break
       end
@@ -101,7 +101,7 @@ ask.render_grid = function(grid, is_compact)
       local cur_width = utils.displaywidth(item)
 
       if column ~= columns then
-        table.insert(line, item .. string.rep(" ", col_width - cur_width + 2))
+        table.insert(line, item .. string.rep(" ", col_width - cur_width))
       else
         table.insert(line, item)
       end

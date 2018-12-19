@@ -51,7 +51,7 @@ lines_to_grid = {
     options = "A list of options to be printed by `ask` prompt, as string elements",
     window_ops = "Geometry information about the window"
   },
-  expected_behavior = "Should process the options in a way to return a grid",
+  expected_behavior = "Should process the options in a way to return a grid. Any padding or change to option str should happen here.",
   returns = "A grid, as a table of columns (which are tables of the options)."
 }
 ```

@@ -55,7 +55,7 @@ insulate("About #ask form", function()
       }
       local line = ask.render_line(opts[1])
 
-      assert.are_same("  [a] Option a", line)
+      assert.are_same("[a] Option a", line)
     end)
 
     it("we can columnize 2 items", function()
@@ -115,14 +115,14 @@ insulate("About #ask form", function()
 
       local ask = require('impromptu.internals.ask')
       assert.are_same({
-          '  [a] Option a        [c] The option c',
-          '  [b] Opt b           [d] Opt d',
+          '  [a] Option a      [c] The option c',
+          '  [b] Opt b         [d] Opt d',
       }, ask.render_grid(grid, false))
 
       local ask = require('impromptu.internals.ask')
       assert.are_same({
-          '  [a] Option a    [c] The option c',
-          '  [b] Opt b       [d] Opt d',
+          '  [a] Option a  [c] The option c',
+          '  [b] Opt b     [d] Opt d',
       }, ask.render_grid(grid, true))
 
     end)
