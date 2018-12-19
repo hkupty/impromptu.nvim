@@ -26,9 +26,20 @@ form.get_header = function(obj)
     obj.session_id ..
     ", '__next')<CR>"
   )
+  nvim.nvim_command(
+    "imap <buffer> <Tab> <Cmd>lua require('impromptu').callback(" ..
+    obj.session_id ..
+    ", '__next')<CR>"
+  )
 
   nvim.nvim_command(
     "nmap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
+    obj.session_id ..
+    ", '__submit')<CR>"
+  )
+
+  nvim.nvim_command(
+    "imap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
     obj.session_id ..
     ", '__submit')<CR>"
   )
@@ -49,6 +60,7 @@ form.draw = function(obj, window_ops)
   local ix
   obj.pos = {}
   nvim.nvim_command("setl conceallevel=2 concealcursor=nvic")
+
 
   local content = {}
 
@@ -89,14 +101,16 @@ form.draw = function(obj, window_ops)
 end
 
 form.should_render = function(obj)
-  local lines = nvim.nvim_buf_get_lines(obj.buffer, 0, -1, false)
-  return lines[1] == ""
+  return obj.current == nil
 end
-
 
 form.render = function(obj)
   if form.should_render(obj) then
     local window_ops = shared.window_for_obj(obj)
+
+    -- FIXME: Become should cleanup type specific settings from buffer
+    nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
+    nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
 
     form.do_mappings(obj)
     local content = form.draw(obj, window_ops)
@@ -116,6 +130,10 @@ form.handle = function(obj, arg)
       if content ~= nil then
         answers[key] = utils.trim(utils.split(content, ":")[2])
       end
+    end
+
+    if nvim.nvim_get_mode().mode ~= "n" then
+      nvim.nvim_command("stopinsert")
     end
 
     return obj:handler(answers)

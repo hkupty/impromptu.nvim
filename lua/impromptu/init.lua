@@ -3,59 +3,88 @@ local utils = require("impromptu.utils")
 local internals = require("impromptu.internals")
 local sessions = require("impromptu.sessions")
 
-local impromptu = {}
+local impromptu = {
+  session = {}
+}
 
-local new_obj = function()
-  local session = math.random(10000, 99999)
-  local obj = {}
-
-  sessions[session] = {}
+local proxy = function(session)
+  local obj = {session_id = session}
 
   setmetatable(obj, {
     __index = function(_, key)
-      return sessions[session][key]
+      local s = sessions[session]
+      return s._col[#s._col][key] or s[key]
     end,
     __newindex = function(_, key, value)
-      sessions[session][key] = value
+      local s = sessions[session]
+      s._col[#s._col][key] = value
     end})
 
-  obj.session_id = session
+    return obj
+end
 
-  return obj
+local new_obj = function()
+  local session = math.random(10000, 99999)
+
+  sessions[session] = {
+    _col = {{}},
+    set = function(_, key, value)
+      rawset(sessions[session], key, value)
+    end,
+    stack = function(this, new)
+      table.insert(this._col, new)
+      return this
+    end,
+    pop = function(this)
+      table.remove(this._col, #this._col)
+      return this
+    end
+  }
+
+  return proxy(session)
+end
+
+local xf_args = {
+  ask = function(args)
+    return {
+      quitable = utils.default(args.quitable, true),
+      header = args.question,
+      breadcrumbs = {},
+      lines = args.options,
+      handler = args.handler,
+      sort = utils.default(args.sort, internals.shared.sort),
+      columns = utils.default(args.columns, 1),
+      type = "ask",
+    }
+  end,
+  form = function(args)
+    return {
+      header = args.title,
+      questions = args.questions,
+      handler = args.handler,
+      type = "form",
+    }
+  end
+}
+
+impromptu.session.stack_into = function(obj, tp, args)
+  return obj:stack(xf_args[tp](args))
+end
+
+impromptu.session.pop_from = function(obj)
+  return obj:pop()
 end
 
 impromptu.ask = function(args)
-  local obj = new_obj()
-
-  obj.quitable = utils.default(args.quitable, true)
-  obj.header = args.question
-  obj.breadcrumbs = {}
-  obj.lines = args.options
-  obj.handler = args.handler
-  obj.sort = utils.default(args.sort, internals.shared.sort)
-  obj.columns = utils.default(args.columns, 1)
-  obj.type = "ask"
-
-  obj = internals.render(obj)
-
-  return obj
+  return internals.render(impromptu.session.stack_into(new_obj(), "ask", args))
 end
 
 impromptu.form = function(args)
-  local obj = new_obj()
-
-  obj.header = args.title
-  obj.questions = args.questions
-  obj.handler = args.handler
-  obj.type = "form"
-
-  obj = internals.render(obj)
-
-  return obj
+  return internals.render(impromptu.session.stack_into(new_obj(), "form", args))
 end
 
 impromptu.callback = function(session, option)
-  local obj = sessions[session]
+  local obj = proxy(session)
 
   if obj == nil then
      return

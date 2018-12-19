@@ -7,7 +7,7 @@ shared.show = function(obj)
     nvim.nvim_command("belowright 15 new")
     nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist")
     local cb = nvim.nvim_get_current_buf()
-    obj.buffer = cb
+    obj:set("buffer", cb)
   end
 
   return obj
