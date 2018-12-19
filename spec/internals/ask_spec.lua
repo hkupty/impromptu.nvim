@@ -6,11 +6,32 @@ local check = {
   call_function = function() return assert.spy(_G.vim.api.nvim_call_function) end,
 }
 
+local utils = require("impromptu.utils")
+
+check.for_options = function(options, expected_grid, col_size)
+    local ask = require('impromptu.internals.ask')
+    local rendered_options = utils.map(options, ask.render_line)
+    local grid = ask.lines_to_grid(rendered_options, col_size)
+
+    assert.are_same(grid, expected_grid)
+    return grid
+end
+
+local fn_impls = {
+  strdisplaywidth = function(args) return #args[1] end
+}
+
 
 insulate("About #ask form", function()
     before_each(function()
         _G.vim = mock({ api = {
-                    nvim_call_function = function(_, _) return 1 end,
+                    nvim_call_function = function(fn, args)
+                      local impl = fn_impls[fn]
+                      if impl ~= nil then
+                        return impl(args)
+                      end
+                      return 1
+                    end,
                     nvim_command = function(_) return "" end,
                     nvim_get_option = function(_) return "" end,
                     nvim_get_var = function(_) return "" end,
@@ -27,68 +48,84 @@ insulate("About #ask form", function()
    end)
 
   describe("when writing #options to the buffer", function()
-    it("returns the options serialized as string", function()
+    it("We can serialize options to strings", function()
       local ask = require('impromptu.internals.ask')
       local opts = {
         {key = "a", description = "Option a"}
       }
-      local lines = ask.line(opts, 1, 30)
+      local line = ask.render_line(opts[1])
 
-      assert.are_same({
-        "  [a] Option a"
-      }, lines)
-
-      check.call_function().was_called(#opts)
+      assert.are_same("  [a] Option a", line)
     end)
 
-    it("columnizes the items 2x2", function()
-      local ask = require('impromptu.internals.ask')
-      local opts = {
+    it("we can columnize 2 items", function()
+      local base = {
         {key = "a", description = "Option a"},
         {key = "b", description = "Option b"}
       }
-      local lines = ask.line(opts, 2, 30)
 
-      assert.are_same({
-        "  [a] Option a                [b] Option b"
-      }, lines)
+      check.for_options(base, {{
+        "  [a] Option a",
+        "  [b] Option b"
+      }}, 2)
 
-      check.call_function().was_called(#opts)
+      check.for_options(base, {
+          { "  [a] Option a" }, { "  [b] Option b" }
+        }, 1)
+
     end)
 
-    it("columnizes the items 3x2", function()
-      local ask = require('impromptu.internals.ask')
-      local opts = {
+    it("we can columnize 3 items", function()
+      local base = {
         {key = "a", description = "Option a"},
         {key = "b", description = "Option b"},
         {key = "c", description = "Option c"}
       }
-      local lines = ask.line(opts, 2, 30)
 
-      assert.are_same({
-        "  [a] Option a                [b] Option b",
-        "  [c] Option c"
-      }, lines)
-
-      check.call_function().was_called(#opts)
-    end)
-
-    it("columnizes the items 3x1", function()
-      local ask = require('impromptu.internals.ask')
-      local opts = {
-        {key = "a", description = "Option a"},
-        {key = "b", description = "Option b"},
-        {key = "c", description = "Option c"}
-      }
-      local lines = ask.line(opts, 1, 30)
-
-      assert.are_same({
+      check.for_options(base, {{
         "  [a] Option a",
         "  [b] Option b",
         "  [c] Option c"
-      }, lines)
+      }}, 3)
 
-      check.call_function().was_called(#opts)
+    check.for_options(base, {
+        { "  [a] Option a", "  [b] Option b", },
+        { "  [c] Option c" }
+      }, 2)
+
+    check.for_options(base, {
+        { "  [a] Option a", },
+        { "  [b] Option b", },
+        { "  [c] Option c" }
+      }, 1)
     end)
+
+    it("We can turn grid into string", function()
+      local base = {
+        {key = "a", description = "Option a"},
+        {key = "b", description = "Opt b"},
+        {key = "c", description = "The option c"},
+        {key = "d", description = "Opt d"}
+      }
+
+      local grid = check.for_options(base, {
+          { "  [a] Option a",  "  [b] Opt b" },
+          { "  [c] The option c",  "  [d] Opt d" },
+        }, 2)
+
+      local ask = require('impromptu.internals.ask')
+      assert.are_same({
+          '  [a] Option a        [c] The option c',
+          '  [b] Opt b           [d] Opt d',
+      }, ask.render_grid(grid, false))
+
+      local ask = require('impromptu.internals.ask')
+      assert.are_same({
+          '  [a] Option a    [c] The option c',
+          '  [b] Opt b       [d] Opt d',
+      }, ask.render_grid(grid, true))
+
+    end)
+
   end)
 end)

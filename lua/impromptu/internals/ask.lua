@@ -44,7 +44,10 @@ ask.lines_to_grid = function(opts, max_sz)
         break
       end
     end
-    table.insert(grid, column)
+
+    if #column ~= 0 then
+      table.insert(grid, column)
+    end
   end
 
   return grid
@@ -56,11 +59,12 @@ ask.render_grid = function(grid, is_compact)
   local widths = {}
   local max_width = 0
 
-  for i =1, #grid do
+  for column = 1, #grid do
     local max = 0
 
-    for j = 1, #grid[i] do
-      local sz = utils.displaywidth(grid[i][j])
+    for row = 1, #grid[column] do
+      local sz = utils.displaywidth(grid[column][row])
+
       if sz > max then
         max = sz
       end
@@ -70,28 +74,31 @@ ask.render_grid = function(grid, is_compact)
       max_width = max
     end
 
-    widths[i] = max
+    widths[column] = max
   end
 
-  for ix = 1, #grid[1] do
+  -- Inverted the order since we produce a table of lines
+  for row = 1, #grid[1] do
     local line = {}
-    for j = 1, columns do
-      local item = grid[j][ix]
+
+    for column = 1, columns do
+      local item = grid[column][row]
 
       if item == nil then
         break
       end
 
       local col_width
+
       if is_compact then
-        col_width = widths[j]
+        col_width = widths[column]
       else
         col_width = max_width
       end
 
       local cur_width = utils.displaywidth(item)
 
-      if j ~= columns then
+      if column ~= columns then
         table.insert(line, item .. string.rep(" ", col_width - cur_width + 2))
       else
         table.insert(line, item)
