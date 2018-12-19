@@ -215,7 +215,9 @@ ask.draw = function(obj, opts, window_ops)
 
   table.insert(content, "")
 
-  local grid = ask.lines_to_grid(utils.map(opts, ask.render_line), window_ops.height - heightOff)
+  local lines_to_grid = obj.lines_to_grid or ask.lines_to_grid
+
+  local grid = lines_to_grid(utils.map(opts, ask.render_line), window_ops.height - heightOff)
 
   for _, line in ipairs(ask.render_grid(grid, obj.is_compact)) do
     table.insert(content, line)

@@ -21,7 +21,6 @@ local fn_impls = {
   strdisplaywidth = function(args) return #args[1] end
 }
 
-
 insulate("About #ask form", function()
     before_each(function()
         _G.vim = mock({ api = {
