@@ -27,34 +27,53 @@ ask.tree = function(session, option)
   end
 end
 
-ask.line = function(opts, columns, width)
-  local opt_to_line = function(line)
+ask.render_line = function(line)
     return  "  [" .. line.key .. "] " .. line.description
-  end
-  local lines = {}
-  local column_width = math.floor(width / columns)
+end
 
-  for ix = 0, #opts + (#opts - 1) % columns, columns do
-    local ln = {}
-    for j = 1, columns do
+ask.lines_to_grid = function(opts, max_sz)
+  local grid = {}
+
+  for ix = 0, #opts + (#opts - 1) % max_sz, max_sz do
+    local column = {}
+    for j = 1, max_sz do
       local k = opts[ix + j]
       if k ~= nil then
-        local line = opt_to_line(k)
-        local padding = column_width - utils.displaywidth(line, 0)
-        if j == columns or opts[ix + j + 1] == nil then
-          table.insert(ln, line)
-        else
-          table.insert(ln, line .. string.rep(" ", padding))
-        end
+        table.insert(column, k)
+      else
+        break
+      end
+    end
+    table.insert(grid, column)
+  end
+
+  return grid
+end
+
+ask.render_grid = function(grid, padding)
+  padding = padding or 3
+  local columns = #grid
+  local lines = {}
+  for ix = 1, #grid[1] do
+    local line = {}
+    for j = 1, columns do
+      local item = grid[j][ix]
+
+      if item == nil then
+        break
+      end
+
+      if j ~= columns then
+        table.insert(line, item .. string.rep(" ", padding))
+      else
+        table.insert(line, item)
       end
     end
 
-    if #ln > 0 then
-      table.insert(lines, table.concat(ln, ""))
-    end
+    table.insert(lines, table.concat(line, ""))
   end
 
-    return lines
+  return lines
 end
 
 ask.get_options = function(obj)
@@ -159,17 +178,9 @@ ask.draw = function(obj, opts, window_ops)
 
   table.insert(content, "")
 
-  local columns
+  local grid = ask.lines_to_grid(utils.map(opts, ask.render_line), window_ops.height - 3)
 
-  if type(obj.columns) == "number" then
-    columns = obj.columns
-  elseif type(obj.columns) == "function" then
-    columns = obj:columns(opts, window_ops)
-  else
-    columns = 1
-  end
-
-  for _, line in ipairs(ask.line(opts, columns, window_ops.width)) do
+  for _, line in ipairs(ask.render_grid(grid, 5)) do
     table.insert(content, line)
   end
 
