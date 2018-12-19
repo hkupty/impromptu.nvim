@@ -31,8 +31,10 @@ ask.render_line = function(line)
     return  "  [" .. line.key .. "] " .. line.description
 end
 
-ask.lines_to_grid = function(opts, max_sz)
+ask.lines_to_grid = function(opts, window_ops)
   local grid = {}
+
+  local max_sz = window_ops.height - window_ops.height_offset
 
   for ix = 0, #opts + (#opts - 1) % max_sz, max_sz do
     local column = {}
@@ -204,20 +206,22 @@ ask.get_header = function(obj)
 ask.draw = function(obj, opts, window_ops)
   local header = ask.get_header(obj)
 
+  window_ops = utils.clone(window_ops)
+
   local content = {}
-  local heightOff = 1
+  window_ops.height_offset = 1
 
   if header ~= "" then
     table.insert(content, header)
     table.insert(content, shared.div(window_ops.width))
-    heightOff = heightOff + 2
+    window_ops.height_offset = window_ops.height_offset + 2
   end
 
   table.insert(content, "")
 
   local lines_to_grid = obj.lines_to_grid or ask.lines_to_grid
 
-  local grid = lines_to_grid(utils.map(opts, ask.render_line), window_ops.height - heightOff)
+  local grid = lines_to_grid(utils.map(opts, ask.render_line), window_ops)
 
   for _, line in ipairs(ask.render_grid(grid, obj.is_compact)) do
     table.insert(content, line)
