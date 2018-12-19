@@ -35,7 +35,7 @@ All data types are supplied here:
 ```lua
 args = {
   quitable = "Optional (default: true). If true, adds a quit option to the menu",
-  columns = "Optional (default: 1). Number of columns to show the options",
+  compact_columns = "Optional (default: false). If true, each column will have different widths.",
   question = "Optional (default: ''). The title of the menu",
   options = "Mandatory. Set of options to be displayed", -- Check options below
   handler = "Mandatory. Function taking the session and the chosen option. For tree-based menus only called for the leaf nodes." -- Check handler and session below
