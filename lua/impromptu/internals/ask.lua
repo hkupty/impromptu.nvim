@@ -50,10 +50,29 @@ ask.lines_to_grid = function(opts, max_sz)
   return grid
 end
 
-ask.render_grid = function(grid, padding)
-  padding = padding or 3
+ask.render_grid = function(grid, is_compact)
   local columns = #grid
   local lines = {}
+  local widths = {}
+  local max_width = 0
+
+  for i =1, #grid do
+    local max = 0
+
+    for j = 1, #grid[i] do
+      local sz = utils.displaywidth(grid[i][j])
+      if sz > max then
+        max = sz
+      end
+    end
+
+    if max > max_width then
+      max_width = max
+    end
+
+    widths[i] = max
+  end
+
   for ix = 1, #grid[1] do
     local line = {}
     for j = 1, columns do
@@ -63,8 +82,17 @@ ask.render_grid = function(grid, padding)
         break
       end
 
+      local col_width
+      if is_compact then
+        col_width = widths[j]
+      else
+        col_width = max_width
+      end
+
+      local cur_width = utils.displaywidth(item)
+
       if j ~= columns then
-        table.insert(line, item .. string.rep(" ", padding))
+        table.insert(line, item .. string.rep(" ", col_width - cur_width + 2))
       else
         table.insert(line, item)
       end
@@ -170,17 +198,19 @@ ask.draw = function(obj, opts, window_ops)
   local header = ask.get_header(obj)
 
   local content = {}
+  local heightOff = 1
 
   if header ~= "" then
     table.insert(content, header)
     table.insert(content, shared.div(window_ops.width))
+    heightOff = heightOff + 2
   end
 
   table.insert(content, "")
 
-  local grid = ask.lines_to_grid(utils.map(opts, ask.render_line), window_ops.height - 3)
+  local grid = obj.grid(utils.map(opts, ask.render_line), window_ops.height - heightOff)
 
-  for _, line in ipairs(ask.render_grid(grid, 5)) do
+  for _, line in ipairs(ask.render_grid(grid, obj.is_compact)) do
     table.insert(content, line)
   end
 
