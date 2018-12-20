@@ -27,34 +27,90 @@ ask.tree = function(session, option)
   end
 end
 
-ask.line = function(opts, columns, width)
-  local opt_to_line = function(line)
-    return  "  [" .. line.key .. "] " .. line.description
-  end
-  local lines = {}
-  local column_width = math.floor(width / columns)
+ask.render_line = function(line)
+    return  "[" .. line.key .. "] " .. line.description
+end
 
-  for ix = 0, #opts + (#opts - 1) % columns, columns do
-    local ln = {}
-    for j = 1, columns do
+ask.lines_to_grid = function(opts, window_ops)
+  local grid = {}
+
+  local max_sz = window_ops.height - window_ops.height_offset
+
+  for ix = 0, #opts + (#opts - 1) % max_sz, max_sz do
+    local column = {}
+    for j = 1, max_sz do
       local k = opts[ix + j]
       if k ~= nil then
-        local line = opt_to_line(k)
-        local padding = column_width - utils.displaywidth(line, 0)
-        if j == columns or opts[ix + j + 1] == nil then
-          table.insert(ln, line)
-        else
-          table.insert(ln, line .. string.rep(" ", padding))
-        end
+        table.insert(column, "  " .. k)
+      else
+        break
       end
     end
 
-    if #ln > 0 then
-      table.insert(lines, table.concat(ln, ""))
+    if #column ~= 0 then
+      table.insert(grid, column)
     end
   end
 
-    return lines
+  return grid
+end
+
+ask.render_grid = function(grid, is_compact)
+  local columns = #grid
+  local lines = {}
+  local widths = {}
+  local max_width = 0
+
+  for column = 1, #grid do
+    local max = 0
+
+    for row = 1, #grid[column] do
+      local sz = utils.displaywidth(grid[column][row])
+
+      if sz > max then
+        max = sz
+      end
+    end
+
+    if max > max_width then
+      max_width = max
+    end
+
+    widths[column] = max
+  end
+
+  -- Inverted the order since we produce a table of lines
+  for row = 1, #grid[1] do
+    local line = {}
+
+    for column = 1, columns do
+      local item = grid[column][row]
+
+      if item == nil then
+        break
+      end
+
+      local col_width
+
+      if is_compact then
+        col_width = widths[column]
+      else
+        col_width = max_width
+      end
+
+      local cur_width = utils.displaywidth(item)
+
+      if column ~= columns then
+        table.insert(line, item .. string.rep(" ", col_width - cur_width))
+      else
+        table.insert(line, item)
+      end
+    end
+
+    table.insert(lines, table.concat(line, ""))
+  end
+
+  return lines
 end
 
 ask.get_options = function(obj)
@@ -150,26 +206,24 @@ ask.get_header = function(obj)
 ask.draw = function(obj, opts, window_ops)
   local header = ask.get_header(obj)
 
+  window_ops = utils.clone(window_ops)
+
   local content = {}
+  window_ops.height_offset = 1
 
   if header ~= "" then
     table.insert(content, header)
     table.insert(content, shared.div(window_ops.width))
+    window_ops.height_offset = window_ops.height_offset + 2
   end
 
   table.insert(content, "")
 
-  local columns
+  local lines_to_grid = obj.lines_to_grid or ask.lines_to_grid
 
-  if type(obj.columns) == "number" then
-    columns = obj.columns
-  elseif type(obj.columns) == "function" then
-    columns = obj:columns(opts, window_ops)
-  else
-    columns = 1
-  end
+  local grid = lines_to_grid(utils.map(opts, ask.render_line), window_ops)
 
-  for _, line in ipairs(ask.line(opts, columns, window_ops.width)) do
+  for _, line in ipairs(ask.render_grid(grid, obj.is_compact)) do
     table.insert(content, line)
   end
 

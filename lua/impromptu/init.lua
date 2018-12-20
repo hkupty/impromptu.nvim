@@ -53,7 +53,8 @@ local xf_args = {
       lines = args.options,
       handler = args.handler,
       sort = utils.default(args.sort, internals.shared.sort),
-      columns = utils.default(args.columns, 1),
+      is_compact = utils.default(args.compact_columns, false),
+      lines_to_grid = utils.default(args.lines_to_grid, nil),
       type = "ask",
     }
   end,

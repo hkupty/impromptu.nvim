@@ -35,13 +35,26 @@ All data types are supplied here:
 ```lua
 args = {
   quitable = "Optional (default: true). If true, adds a quit option to the menu",
-  columns = "Optional (default: 1). Number of columns to show the options",
+  compact_columns = "Optional (default: false). If true, each column will have different widths.",
+  lines_to_grid = "Optional (default: nil). If set, should transform a list of string options to a table of tables containing the options",
   question = "Optional (default: ''). The title of the menu",
   options = "Mandatory. Set of options to be displayed", -- Check options below
   handler = "Mandatory. Function taking the session and the chosen option. For tree-based menus only called for the leaf nodes." -- Check handler and session below
 }
 ```
-See also: [handler](#handler), [session](#session) and [options](#options).
+See also: [lines_to_grid](#lines_to_grid), [handler](#handler), [session](#session) and [options](#options).
+
+### lines_to_grid
+```lua
+lines_to_grid = {
+  args = {
+    options = "A list of options to be printed by `ask` prompt, as string elements",
+    window_ops = "Geometry information about the window"
+  },
+  expected_behavior = "Should process the options in a way to return a grid. Any padding or change to option str should happen here.",
+  returns = "A grid, as a table of columns (which are tables of the options)."
+}
+```
 
 ### handler
 ```lua
