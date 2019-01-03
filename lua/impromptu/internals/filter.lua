@@ -135,7 +135,7 @@ filter.get_options = function(obj)
   end
 
   options[#options + obj.offset].selected = true
-  obj.selected = options[#options + obj.offset].description
+  obj.selected = options[#options + obj.offset]
 
   obj.selected['selected'] = nil
 
@@ -147,11 +147,13 @@ filter.filter_fn = function(filter_exprs, lines)
 
   for _, filter_expr in ipairs(filter_exprs) do
     local tmp = {}
+
     for _, line in ipairs(current) do
       if string.find(line.description, filter_expr) then
         table.insert(tmp, line)
       end
     end
+
     current = tmp
   end
 
