@@ -4,6 +4,7 @@ local sessions = require("impromptu.sessions")
 local internals = {
   types = {
     ask = require("impromptu.internals.ask"),
+    filter = require("impromptu.internals.filter"),
     form = require("impromptu.internals.form")
   },
   shared = require("impromptu.internals.shared")

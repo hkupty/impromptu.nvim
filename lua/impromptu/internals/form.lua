@@ -118,6 +118,8 @@ form.render = function(obj)
     nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     form.set_cursor(obj, obj.current)
   end
+
+  return form
 end
 
 form.handle = function(obj, arg)

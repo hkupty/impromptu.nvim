@@ -7,7 +7,7 @@ shared.show = function(obj)
     nvim.nvim_command("belowright 15 new")
     nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist")
     local cb = nvim.nvim_get_current_buf()
-    obj:set("buffer", cb)
+    obj:set("buffer", math.ceil(cb))
   end
 
   return obj
@@ -16,12 +16,14 @@ end
 shared.window_for_obj = function(obj)
   obj = shared.show(obj)
 
+  local bufnr = nvim.nvim_call_function("bufnr", {obj.buffer})
   local winnr = nvim.nvim_call_function("bufwinnr", {obj.buffer})
   local window = nvim.nvim_call_function("win_getid", {winnr})
   local sz = nvim.nvim_win_get_width(window)
   local h = nvim.nvim_win_get_height(window)
 
   return {
+    bufnr = bufnr,
     window = window,
     width = sz,
     height = h
