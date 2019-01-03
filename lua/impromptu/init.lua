@@ -65,7 +65,21 @@ local xf_args = {
       handler = args.handler,
       type = "form",
     }
-  end
+  end,
+  filter = function(args)
+    return {
+      header = args.title,
+      lines = args.options,
+      update = internals.types.filter.update,
+      offset = 0,
+      staged_expr = {},
+      filter_exprs = {""},
+      handler = args.handler,
+      filter_fn = utils.default(args.filter_fn, internals.types.filter.filter_fn),
+      type = "filter",
+    }
+  end,
+
 }
 
 impromptu.session.stack_into = function(obj, tp, args)
@@ -82,6 +96,10 @@ end
 
 impromptu.form = function(args)
   return internals.render(impromptu.session.stack_into(new_obj(), "form", args))
+end
+
+impromptu.filter = function(args)
+  return internals.render(impromptu.session.stack_into(new_obj(), "filter", args))
 end
 
 impromptu.callback = function(session, option)

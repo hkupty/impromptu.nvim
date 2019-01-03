@@ -251,6 +251,8 @@ ask.render = function(obj)
   nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
   nvim.nvim_buf_set_option(obj.buffer, "modifiable", false)
   nvim.nvim_buf_set_option(obj.buffer, "readonly", true)
+
+  return obj
 end
 
 ask.handle = function(obj, option)
