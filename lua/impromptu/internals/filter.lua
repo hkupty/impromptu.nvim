@@ -68,6 +68,20 @@ filter.get_header = function(obj)
   )
 
   nvim.nvim_command(
+    "imap <buffer> <C-c> " ..
+    "<Cmd>lua require('impromptu').callback("  ..
+    obj.session_id ..
+    ", '__quit')<CR>"
+  )
+
+  nvim.nvim_command(
+    "nmap <buffer> <C-c> " ..
+    "<Cmd>lua require('impromptu').callback("  ..
+    obj.session_id ..
+    ", '__quit')<CR>"
+  )
+
+  nvim.nvim_command(
     "augroup impromtpu | " ..
     "au! InsertCharPre <buffer="  .. obj.buffer .. "> " ..
     "exe 'lua require(\"impromptu\").callback(" ..
@@ -130,12 +144,16 @@ filter.get_options = function(obj)
     return {}
   end
 
-  if math.abs(obj.offset) > #options then
+  local selected = #options + obj.offset
+
+  if selected <= 0 then
     obj.offset = (#options - 1) * -1
+    selected = #options + obj.offset
   end
 
-  options[#options + obj.offset].selected = true
-  obj.selected = options[#options + obj.offset]
+  options[selected].selected = true
+
+  obj.selected = utils.clone(options[selected])
 
   obj.selected['selected'] = nil
 
@@ -161,12 +179,20 @@ filter.filter_fn = function(filter_exprs, lines)
 end
 
 filter.append = function(obj, opt)
+
   if opt == " " then
     table.insert(obj.filter_exprs, "")
+
   elseif type(opt) == "string" then
     obj.filter_exprs[#obj.filter_exprs] = obj.filter_exprs[#obj.filter_exprs] .. opt
+
   elseif type(opt) == "number" then
+    if #obj.filter_exprs == 1 and obj.filter_exprs[1] == "" then
+      return
+    end
+
     local sz = utils.displaywidth(obj.filter_exprs[#obj.filter_exprs])
+
     if sz == 0 then
       table.remove(obj.filter_exprs, #obj.filter_exprs)
     else
