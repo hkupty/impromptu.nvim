@@ -137,6 +137,8 @@ filter.get_options = function(obj)
   options[#options + obj.offset].selected = true
   obj.selected = options[#options + obj.offset].description
 
+  obj.selected['selected'] = nil
+
   return options
 end
 

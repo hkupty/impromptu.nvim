@@ -2,7 +2,9 @@
 
 1. [What is impromptu](#what-is-impromptu?)
 2. [API](#api)
-    1. [impromptu.core.ask](#impromptu.core.ask)
+    1. [impromptu.ask](#impromptu.ask)
+    1. [impromptu.form](#impromptu.form)
+    1. [impromptu.filter](#impromptu.filter)
 3. [Data Structures](#data-structures)
     1. [ask_args](#ask_args)
     2. [handler](#handler)
@@ -19,13 +21,29 @@ It is designed to be generic and with a simple architecture to allow any kind of
 
 Below is the public function of the impromptu API:
 
-### impromptu.core.ask
+### impromptu.ask
 
 A function that takes [`ask_args`](#ask_args) and returns a [`session`](#session).
 Opens a new window containing a header and the menu from the supplied [`ask_args`](#ask_args).
 The menu is [tree-based](tree-based.md) if the [`options`](#options) table contains children.
 
 You can look at a [complete example](sample.md) to have a better idea.
+
+### impromptu.form
+
+A function that takes [`form_args`](#form_args) and returns a [`session`](#session).
+Opens a new window containing a header and [`form_args`](#form_args).
+
+It asks for string values to the 'questions' provided.
+
+### impromptu.filter
+
+A function that takes [`filter_args`](#filter_args) and returns a [`session`](#session).
+Opens a new window containing a header, [`filter_args`](#filter_args) and it takes the input to filter the arguments.
+
+It allows you to select a value from the list of supplied arguments through user input.
+
+The session can be updated and more items can be added 'in-flight'.
 
 ## Data Structures
 
@@ -44,6 +62,27 @@ args = {
 ```
 See also: [lines_to_grid](#lines_to_grid), [handler](#handler), [session](#session) and [options](#options).
 
+### form_args
+```lua
+args = {
+  header = "Mandatory. The title of the menu",
+  questions = "Mandatory. Values to be inputed through the form",
+  handler = "Mandatory. Function taking the session and the chosen option."
+}
+```
+See also: [handler](#handler), [session](#session) and [form_questions](#form_questions).
+
+### filter_args
+```lua
+args = {
+  header = "Mandatory. The title of the menu",
+  lines = "Mandatory. Values to be selected through filtering",
+  handler = "Mandatory. Function taking the session and the chosen option."
+  filter_fn = "Optional. Function that takes filter expressions and lines and return lines." -- See more below
+}
+```
+See also: [handler](#handler), [session](#session) [filter_fn](#filter_fn), and [filter_lines](#filter_lines).
+
 ### lines_to_grid
 ```lua
 lines_to_grid = {
@@ -60,7 +99,7 @@ lines_to_grid = {
 ```lua
 handler = {
   args = {
-    session = "The state of the current menu prompt", -- See session below
+    session = "The state of the current prompt", -- See session below
     option = "The selected `option_key` value of chosen menu option" -- See options below
   },
   expected_behavior = "Should cause the desired side-effect with supplied args",
@@ -98,5 +137,31 @@ options = {
     children = "Optional. Table of the same structure as `options`, describing submenus."
   }
 
+}
+```
+
+### filter_lines
+The list of items to be shown. Description is the only required key as it'll be the only thing to be shown to the user.
+Any other information added to the option will be given back to the handler.
+
+```lua
+options = {
+    {
+      description = "Mandatory. A string describing the option in the menu."
+    -- Optionally, you can add whatever value you want here.
+    }
+  }
+
+}
+```
+
+### form_questions
+This will contain the description of the values you want inputed.
+The keys will be the same on the returning map, containing the response for each.
+
+```lua
+options = {
+  question = "Description.",
+  another_question = "Description".
 }
 ```
