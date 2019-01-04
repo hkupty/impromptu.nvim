@@ -100,15 +100,12 @@ form.draw = function(obj, window_ops)
   return content
 end
 
-form.should_render = function(obj)
-  return obj.current == nil
-end
-
 form.render = function(obj)
-  if form.should_render(obj) then
-    local window_ops = shared.window_for_obj(obj)
+  local first_run = obj.buffer == nil
+  local window_ops = shared.window_for_obj(obj)
 
-    -- FIXME: Become should cleanup type specific settings from buffer
+  if first_run then
+    -- FIXME: Stack/pop should cleanup type specific settings from buffer
     nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
     nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
 
@@ -119,7 +116,7 @@ form.render = function(obj)
     form.set_cursor(obj, obj.current)
   end
 
-  return form
+  return obj
 end
 
 form.handle = function(obj, arg)

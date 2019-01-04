@@ -204,35 +204,20 @@ ask.get_header = function(obj)
  end
 
 ask.draw = function(obj, opts, window_ops)
-  local header = ask.get_header(obj)
-
-  window_ops = utils.clone(window_ops)
-
   local content = {}
-  window_ops.height_offset = 1
-
-  if header ~= "" then
-    table.insert(content, header)
-    table.insert(content, shared.div(window_ops.width))
-    window_ops.height_offset = window_ops.height_offset + 2
-  end
-
-  table.insert(content, "")
-
   local lines_to_grid = obj.lines_to_grid or ask.lines_to_grid
-
   local grid = lines_to_grid(utils.map(opts, ask.render_line), window_ops)
+  local lines = ask.render_grid(grid, obj.is_compact)
 
-  for _, line in ipairs(ask.render_grid(grid, obj.is_compact)) do
-    table.insert(content, line)
-  end
-
-  if #content < window_ops.height then
-    local fill = window_ops.height - #content
-    for _ = 1, fill do
-      table.insert(content, "")
+  local add = function(coll)
+    for _, line in ipairs(coll) do
+      table.insert(content, line)
     end
   end
+
+  add(shared.header(obj, window_ops))
+  add(lines)
+  add(shared.spacer(lines, window_ops))
 
   return content
  end

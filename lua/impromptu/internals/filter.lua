@@ -6,18 +6,8 @@ local shared = require("impromptu.internals.shared")
 local filter = {}
 
 filter.render_line = function(line)
-    return  (line.selected and " > " or "   ") .. line.description
+    return  (line.selected and " → " or "   ") .. line.description
 end
-
-filter.get_header = function(obj)
-  local header = ""
-
-  if obj.header ~= nil then
-    header = obj.header
-  end
-
-   return header
- end
 
  filter.do_mappings = function(obj)
   nvim.nvim_command("mapclear <buffer>")
@@ -97,32 +87,19 @@ filter.get_header = function(obj)
  end
 
 filter.draw = function(obj, opts, window_ops)
-  local header = filter.get_header(obj)
   local content = {}
+  local lines = utils.map(opts, filter.render_line)
 
-  -- TODO move to own fn
-  if header ~= "" then
-    table.insert(content, header)
-    table.insert(content, shared.div(window_ops.width))
-  end
-
-  table.insert(content, "")
-
-  for _, line in ipairs(utils.map(opts, filter.render_line)) do
-    table.insert(content, line)
-  end
-
-  if #content < (window_ops.height - window_ops.bottom_offset) then
-    local fill = window_ops.height - #content - window_ops.bottom_offset
-    for _ = 1, fill do
-      table.insert(content, "")
+  local add = function(coll)
+    for _, line in ipairs(coll) do
+      table.insert(content, line)
     end
   end
 
-  -- TODO move to own fn
-  table.insert(content, "")
-  table.insert(content, shared.sub_div(window_ops.width))
-  table.insert(content, table.concat(obj.filter_exprs, " "))
+  add(shared.header(obj, window_ops))
+  add(lines)
+  add(shared.spacer(lines, window_ops))
+  add(shared.footer(table.concat(obj.filter_exprs, " "), window_ops))
 
   return content
  end
@@ -134,12 +111,14 @@ filter.get_options = function(obj, window_ops)
   local filtered = obj.filter_fn(obj.filter_exprs, obj.lines)
 
   for ix, line in ipairs(filtered) do
-    local opt = utils.clone(line)
-    opt.selected = false
-    table.insert(options, opt)
+    if line.description ~= "" then
+      local opt = utils.clone(line)
+      opt.selected = false
+      table.insert(options, opt)
 
-    if ix == max_items then
-      break
+      if ix == max_items then
+        break
+      end
     end
   end
 
@@ -221,21 +200,16 @@ filter.stage = function(obj, opt)
 end
 
 filter.render = function(obj)
+  local first_run = obj.buffer == nil
+  local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
+
+  if first_run then
+    filter.do_mappings(obj)
+  end
+
   if #obj.staged_expr == 0 then
-    local window_ops = shared.window_for_obj(obj)
-
-    -- TODO move to own fn
-    window_ops.top_offset = 1
-    if obj.header ~= nil then
-      window_ops.top_offset = window_ops.top_offset + 2
-    end
-
-    window_ops.bottom_offset = 3
-
     local opts = filter.get_options(obj, window_ops)
     local content = filter.draw(obj, opts, window_ops)
-
-    filter.do_mappings(obj)
 
     nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     nvim.nvim_win_set_cursor(window_ops.window, {#content, utils.displaywidth(content[#content])})
@@ -252,6 +226,7 @@ end
 
 filter.handle = function(obj, option)
   if option == "__select" then
+    nvim.nvim_command("stopinsert")
     return obj:handler(obj.selected)
   elseif option == "__up" then
     filter.move_selection(obj, -1)
