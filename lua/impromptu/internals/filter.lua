@@ -204,6 +204,7 @@ filter.render = function(obj)
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
 
   if first_run then
+    nvim.nvim_call_function("matchadd", {"WarningMsg", " →"})
     filter.do_mappings(obj)
   end
 
