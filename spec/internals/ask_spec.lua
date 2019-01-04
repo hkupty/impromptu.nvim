@@ -119,7 +119,6 @@ insulate("About #ask form", function()
           '  [b] Opt b         [d] Opt d',
       }, ask.render_grid(grid, false))
 
-      local ask = require('impromptu.internals.ask')
       assert.are_same({
           '  [a] Option a  [c] The option c',
           '  [b] Opt b     [d] Opt d',
