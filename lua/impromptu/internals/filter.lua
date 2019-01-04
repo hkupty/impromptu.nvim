@@ -98,16 +98,12 @@ filter.get_header = function(obj)
 
 filter.draw = function(obj, opts, window_ops)
   local header = filter.get_header(obj)
-
-  window_ops = utils.clone(window_ops)
-
   local content = {}
-  window_ops.height_offset = 1
 
+  -- TODO move to own fn
   if header ~= "" then
     table.insert(content, header)
     table.insert(content, shared.div(window_ops.width))
-    window_ops.height_offset = window_ops.height_offset + 2
   end
 
   table.insert(content, "")
@@ -116,45 +112,51 @@ filter.draw = function(obj, opts, window_ops)
     table.insert(content, line)
   end
 
-  if #content < (window_ops.height - 2) then
-    local fill = window_ops.height - #content - 2
+  if #content < (window_ops.height - window_ops.bottom_offset) then
+    local fill = window_ops.height - #content - window_ops.bottom_offset
     for _ = 1, fill do
       table.insert(content, "")
     end
   end
 
+  -- TODO move to own fn
+  table.insert(content, "")
   table.insert(content, shared.sub_div(window_ops.width))
   table.insert(content, table.concat(obj.filter_exprs, " "))
 
   return content
  end
 
-filter.get_options = function(obj)
+filter.get_options = function(obj, window_ops)
   local options = {}
+  local max_items = window_ops.height - (window_ops.top_offset + window_ops.bottom_offset)
 
   local filtered = obj.filter_fn(obj.filter_exprs, obj.lines)
 
-  for _, line in ipairs(filtered) do
+  for ix, line in ipairs(filtered) do
     local opt = utils.clone(line)
     opt.selected = false
     table.insert(options, opt)
+
+    if ix == max_items then
+      break
+    end
   end
 
   if #options == 0 then
     return {}
   end
 
-  local selected = #options + obj.offset
 
-  if selected <= 0 then
-    obj.offset = (#options - 1) * -1
-    selected = #options + obj.offset
+  if obj.offset >= #options then
+    obj.offset = #options
+  elseif obj.offset < 1 then
+    obj.offset = 1
   end
 
-  options[selected].selected = true
+  options[obj.offset].selected = true
 
-  obj.selected = utils.clone(options[selected])
-
+  obj.selected = utils.clone(options[obj.offset])
   obj.selected['selected'] = nil
 
   return options
@@ -220,8 +222,17 @@ end
 
 filter.render = function(obj)
   if #obj.staged_expr == 0 then
-    local opts = filter.get_options(obj)
     local window_ops = shared.window_for_obj(obj)
+
+    -- TODO move to own fn
+    window_ops.top_offset = 1
+    if obj.header ~= nil then
+      window_ops.top_offset = window_ops.top_offset + 2
+    end
+
+    window_ops.bottom_offset = 3
+
+    local opts = filter.get_options(obj, window_ops)
     local content = filter.draw(obj, opts, window_ops)
 
     filter.do_mappings(obj)
@@ -235,12 +246,8 @@ filter.render = function(obj)
 end
 
 filter.move_selection = function(obj, direction)
-  if obj.offset + direction > 0 then
-    return false
-  else
-    obj.offset = obj.offset + direction
-    return true
-  end
+  obj.offset = obj.offset + direction
+  return true
 end
 
 filter.handle = function(obj, option)
