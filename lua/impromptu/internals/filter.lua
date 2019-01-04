@@ -110,13 +110,13 @@ filter.get_options = function(obj, window_ops)
 
   local filtered = obj.filter_fn(obj.filter_exprs, obj.lines)
 
-  for ix, line in ipairs(filtered) do
+  for _, line in ipairs(filtered) do
     if line.description ~= "" then
       local opt = utils.clone(line)
       opt.selected = false
       table.insert(options, opt)
 
-      if ix == max_items then
+      if #options == max_items then
         break
       end
     end
