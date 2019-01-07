@@ -126,7 +126,6 @@ filter.get_options = function(obj, window_ops)
     return {}
   end
 
-
   if obj.offset >= #options then
     obj.offset = #options
   elseif obj.offset < 1 then

@@ -149,6 +149,26 @@ utils.merge = function(...)
   return new
 end
 
+-- Taken from luarocks
+utils.deep_merge = function(tgt, src)
+  local dst = utils.clone(tgt)
+   for k, v in pairs(src) do
+      if type(v) == "table" then
+         if not dst[k] then
+            dst[k] = {}
+         end
+         if type(dst[k]) == "table" then
+            utils.deep_merge(dst[k], v)
+         else
+            dst[k] = v
+         end
+      else
+         dst[k] = v
+      end
+   end
+   return dst
+end
+
 utils.extend = function(tbls)
   local new = {}
 

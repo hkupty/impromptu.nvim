@@ -7,6 +7,14 @@ local impromptu = {
   session = {}
 }
 
+local config = {
+  ui = {
+    div = "─",
+    sub_div = "•"
+  },
+  lru = 10
+}
+
 local proxy = function(session)
   local obj = {session_id = session}
 
@@ -56,6 +64,7 @@ local xf_args = {
       is_compact = utils.default(args.compact_columns, false),
       lines_to_grid = utils.default(args.lines_to_grid, nil),
       type = "ask",
+      config = utils.default(args.config, config)
     }
   end,
   form = function(args)
@@ -64,6 +73,7 @@ local xf_args = {
       questions = args.questions,
       handler = args.handler,
       type = "form",
+      config = utils.default(args.config, config)
     }
   end,
   filter = function(args)
@@ -77,6 +87,7 @@ local xf_args = {
       handler = args.handler,
       filter_fn = utils.default(args.filter_fn, internals.types.filter.filter_fn),
       type = "filter",
+      config = utils.default(args.config, config)
     }
   end,
 
@@ -117,6 +128,22 @@ impromptu.callback = function(session, option)
   else
     internals.render(obj)
   end
+end
+
+impromptu.config = {}
+
+impromptu.config.set = function(obj)
+  config = impromptu.config.merged(obj)
+
+  return impromptu.config.get()
+end
+
+impromptu.config.get = function()
+  return utils.clone(config)
+end
+
+impromptu.config.merged = function(obj)
+  return utils.deep_merge(config, obj)
 end
 
 return impromptu
