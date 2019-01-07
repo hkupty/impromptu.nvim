@@ -148,7 +148,7 @@ filter.filter_fn = function(filter_exprs, lines)
     local tmp = {}
 
     for _, line in ipairs(current) do
-      if string.find(line.description, filter_expr) then
+      if string.find(line.description, filter_expr, 1, true) then
         table.insert(tmp, line)
       end
     end
