@@ -7,7 +7,7 @@ shared.show = function(obj)
     nvim.nvim_command("botright 15 new")
     local cb = nvim.nvim_get_current_buf()
     -- TODO Change to API-based when nvim_win_set_option exists.
-    nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw")
+    nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw nowrap")
     obj:set("buffer", math.ceil(cb))
   end
 

@@ -6,7 +6,7 @@ local shared = require("impromptu.internals.shared")
 local filter = {}
 
 filter.render_line = function(line)
-    return  (line.selected and " → " or "   ") .. line.description
+    return (line.selected and " → " or "   ") .. line.description
 end
 
  filter.do_mappings = function(obj)
