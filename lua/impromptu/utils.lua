@@ -198,4 +198,21 @@ utils.displaywidth = function(expr, col)
   return vim.api.nvim_call_function('strdisplaywidth', { expr, col })
 end
 
+utils.take = function(sz, iter, cinv, z)
+  local count = 1
+
+  return function(inv, c)
+    if count > sz then
+      return
+    end
+
+    count = count + 1
+    return iter(inv, c)
+  end, cinv, z
+end
+
+utils.replace_at = function(str, nv, at)
+  return string.gsub(str, "().", {[at] = nv})
+end
+
 return utils
