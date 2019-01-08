@@ -34,7 +34,7 @@ end
 ask.lines_to_grid = function(opts, window_ops)
   local grid = {}
 
-  local max_sz = window_ops.height - window_ops.height_offset
+  local max_sz = window_ops.height - window_ops.top_offset
 
   for ix = 0, #opts + (#opts - 1) % max_sz, max_sz do
     local column = {}
