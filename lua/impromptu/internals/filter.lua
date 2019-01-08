@@ -6,7 +6,7 @@ local shared = require("impromptu.internals.shared")
 local filter = {}
 
 filter.render_line = function(line)
-    return  (line.selected and " → " or "   ") .. line.description
+    return "   " .. line.description
 end
 
  filter.do_mappings = function(obj)
@@ -90,6 +90,10 @@ filter.draw = function(obj, opts, window_ops)
   local content = {}
   local lines = utils.map(opts, filter.render_line)
 
+  if lines[obj.offset] ~= nil then
+    lines[obj.offset] = utils.replace_at(lines[obj.offset], "→", 2)
+  end
+
   local add = function(coll)
     for _, line in ipairs(coll) do
       table.insert(content, line)
@@ -106,57 +110,55 @@ filter.draw = function(obj, opts, window_ops)
 
 filter.get_options = function(obj, window_ops)
   local options = {}
-  local max_items = window_ops.height - (window_ops.top_offset + window_ops.bottom_offset)
+  local max_items = shared.draw_area_size(window_ops)
 
-  local filtered = obj.filter_fn(obj.filter_exprs, obj.lines)
-
-  for ix, line in ipairs(filtered) do
-    if line.description ~= "" then
-      local opt = utils.clone(line)
-      opt.selected = false
-      table.insert(options, opt)
-
-      if ix == max_items then
-        break
-      end
-    end
+  for line in utils.take(max_items, obj.filter_fn(obj.filter_exprs, obj.lines)) do
+    table.insert(options, line)
   end
 
   if #options == 0 then
     return {}
   end
 
-
+  -- TODO allow sliding window
   if obj.offset >= #options then
     obj.offset = #options
   elseif obj.offset < 1 then
     obj.offset = 1
   end
 
-  options[obj.offset].selected = true
-
-  obj.selected = utils.clone(options[obj.offset])
-  obj.selected['selected'] = nil
+  obj.selected = options[obj.offset]
 
   return options
 end
 
 filter.filter_fn = function(filter_exprs, lines)
-  local current = utils.clone(lines)
+  local ix = 1
+  local max = #lines
 
-  for _, filter_expr in ipairs(filter_exprs) do
-    local tmp = {}
-
-    for _, line in ipairs(current) do
-      if string.find(line.description, filter_expr) then
-        table.insert(tmp, line)
-      end
-    end
-
-    current = tmp
+  if max == 0 then
+    return function() return end
   end
 
-  return current
+  local function nxt()
+    local itm = lines[ix]
+    ix = ix + 1
+
+    if itm == nil then
+      return
+    elseif itm.description == "" then
+      return nxt()
+    end
+
+    for _, filter_expr in ipairs(filter_exprs) do
+      if not string.find(itm.description, filter_expr, 1, true) then
+        return nxt()
+      end
+    end
+    return itm
+  end
+
+  return nxt
 end
 
 filter.append = function(obj, opt)

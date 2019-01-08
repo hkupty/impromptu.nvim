@@ -21,6 +21,8 @@ internals.destroy = function(obj_or_session)
 
   local window = math.floor(nvim.nvim_call_function("bufwinnr", {obj.buffer}))
   nvim.nvim_command(window .. ' wincmd w | q')
+
+  obj.destroyed = true
 end
 
 internals.render = function(obj)

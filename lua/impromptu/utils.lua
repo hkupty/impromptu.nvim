@@ -149,6 +149,26 @@ utils.merge = function(...)
   return new
 end
 
+-- Taken from luarocks
+utils.deep_merge = function(tgt, src)
+  local dst = utils.clone(tgt)
+   for k, v in pairs(src) do
+      if type(v) == "table" then
+         if not dst[k] then
+            dst[k] = {}
+         end
+         if type(dst[k]) == "table" then
+            utils.deep_merge(dst[k], v)
+         else
+            dst[k] = v
+         end
+      else
+         dst[k] = v
+      end
+   end
+   return dst
+end
+
 utils.extend = function(tbls)
   local new = {}
 
@@ -176,6 +196,23 @@ end
 
 utils.displaywidth = function(expr, col)
   return vim.api.nvim_call_function('strdisplaywidth', { expr, col })
+end
+
+utils.take = function(sz, iter, cinv, z)
+  local count = 1
+
+  return function(inv, c)
+    if count > sz then
+      return
+    end
+
+    count = count + 1
+    return iter(inv, c)
+  end, cinv, z
+end
+
+utils.replace_at = function(str, nv, at)
+  return string.gsub(str, "().", {[at] = nv})
 end
 
 return utils
