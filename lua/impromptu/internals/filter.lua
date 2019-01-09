@@ -207,15 +207,21 @@ filter.do_hl = function(obj)
     table.remove(obj.hls, ix)
   end
 
-  for ix = 1, #obj.filter_exprs - 1 do
-    if obj.filter_exprs[ix] ~= "" then
-      table.insert(obj.hls, nvim.nvim_call_function("matchadd", {"Function", obj.filter_exprs[ix]}))
+  local exprs_sz = #obj.filter_exprs
+  for ix, expr in ipairs(obj.filter_exprs) do
+    if expr ~= "" then
+      local hl
+
+      if ix == exprs_sz then
+        hl = "Keyword"
+      else
+        hl = "Function"
+      end
+
+      table.insert(obj.hls, nvim.nvim_call_function("matchadd", {hl, expr}))
     end
   end
 
-  if obj.filter_exprs[#obj.filter_exprs] ~= "" then
-    table.insert(obj.hls, nvim.nvim_call_function("matchadd", {"Keyword", obj.filter_exprs[#obj.filter_exprs]}))
-  end
 end
 
 filter.render = function(obj)
