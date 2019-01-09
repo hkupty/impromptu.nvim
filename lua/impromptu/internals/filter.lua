@@ -201,6 +201,23 @@ filter.stage = function(obj, opt)
   table.insert(obj.staged_expr, opt)
 end
 
+filter.do_hl = function(obj)
+  for ix = #obj.hls, 1, -1 do
+    nvim.nvim_call_function("matchdelete", {obj.hls[ix]})
+    table.remove(obj.hls, ix)
+  end
+
+  for ix = 1, #obj.filter_exprs - 1 do
+    if obj.filter_exprs[ix] ~= "" then
+      table.insert(obj.hls, nvim.nvim_call_function("matchadd", {"Function", obj.filter_exprs[ix]}))
+    end
+  end
+
+  if obj.filter_exprs[#obj.filter_exprs] ~= "" then
+    table.insert(obj.hls, nvim.nvim_call_function("matchadd", {"Keyword", obj.filter_exprs[#obj.filter_exprs]}))
+  end
+end
+
 filter.render = function(obj)
   local first_run = obj.buffer == nil
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
@@ -214,6 +231,7 @@ filter.render = function(obj)
     local opts = filter.get_options(obj, window_ops)
     local content = filter.draw(obj, opts, window_ops)
 
+    filter.do_hl(obj)
     nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     nvim.nvim_win_set_cursor(window_ops.window, {#content, utils.displaywidth(content[#content])})
     nvim.nvim_command("startinsert")
