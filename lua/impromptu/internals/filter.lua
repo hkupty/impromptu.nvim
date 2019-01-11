@@ -225,7 +225,8 @@ filter.do_hl = function(obj)
 end
 
 filter.render = function(obj)
-  local first_run = obj.buffer == nil
+  local first_run = obj.first ~= nil
+  obj.first = 1
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
 
   if first_run then
