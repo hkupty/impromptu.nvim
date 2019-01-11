@@ -92,7 +92,7 @@ shared.div = function(sz)
 end
 
 shared.sub_div = function(sz)
-  return string.rep("•", sz)
+  return string.rep("─", sz)
 end
 
 shared.get_footer = function(obj)

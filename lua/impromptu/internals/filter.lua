@@ -151,7 +151,7 @@ filter.filter_fn = function(filter_exprs, lines)
     end
 
     for _, filter_expr in ipairs(filter_exprs) do
-      if not string.find(itm.description, filter_expr, 1, true) then
+     if not string.find(itm.description:lower(), filter_expr:lower(), 1, true) then
         return nxt()
       end
     end
@@ -218,14 +218,15 @@ filter.do_hl = function(obj)
         hl = "Function"
       end
 
-      table.insert(obj.hls, nvim.nvim_call_function("matchadd", {hl, expr}))
+      table.insert(obj.hls, nvim.nvim_call_function("matchadd", {hl, "\\c" .. expr}))
     end
   end
 
 end
 
 filter.render = function(obj)
-  local first_run = obj.buffer == nil
+  local first_run = obj.first ~= nil
+  obj.first = 1
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
 
   if first_run then

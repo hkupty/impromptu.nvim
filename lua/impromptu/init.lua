@@ -82,6 +82,7 @@ local xf_args = {
       lines = args.options,
       update = internals.types.filter.update,
       offset = 0,
+      hls = {},
       staged_expr = {},
       filter_exprs = {""},
       handler = args.handler,
