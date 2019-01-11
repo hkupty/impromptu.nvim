@@ -211,6 +211,23 @@ utils.take = function(sz, iter, cinv, z)
   end, cinv, z
 end
 
+utils.drop = function(sz, iter, cinv, z)
+  local count = sz
+
+  local function drop_iter(inv, c)
+    local result = iter(inv, c)
+
+    if count > 0 then
+      count = count - 1
+      return drop_iter(inv, c + 1)
+    end
+
+    return result
+  end
+
+  return drop_iter, cinv, z
+end
+
 utils.replace_at = function(str, nv, at)
   return string.gsub(str, "().", {[at] = nv})
 end
