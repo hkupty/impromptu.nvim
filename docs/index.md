@@ -78,7 +78,7 @@ args = {
   header = "Mandatory. The title of the menu",
   lines = "Mandatory. Values to be selected through filtering",
   handler = "Mandatory. Function taking the session and the chosen option."
-  filter_fn = "Optional. Function that takes filter expressions and lines and return lines." -- See more below
+  filter_fn = "Optional. Iterator that takes filter expressions and lines and returns lines matching" -- See more below
 }
 ```
 See also: [handler](#handler), [session](#session) [filter_fn](#filter_fn), and [filter_lines](#filter_lines).
@@ -109,6 +109,23 @@ handler = {
 See also: [session](#session) and [options](#options).
 
 If the handler function needs information from the buffer that was in use before opening the menu, construct the variables containing this information in the scope outside of `ask_args`, and use it as an upvalue in `handler`. See the [example](sample.md) and the usage of the variable `ft` therein.
+
+
+### filter_fn
+```lua
+filter_fn = {
+  args = {
+    filter_expressions = "The state of the current prompt",
+    lines = "The selected `option_key` value of chosen menu option"
+  },
+  expected_behavior = "Should cause the desired side-effect with supplied args",
+  returns = "A boolean representing whether the menu should be closed or not"
+}
+```
+See also: [session](#session) and [options](#options).
+
+If the handler function needs information from the buffer that was in use before opening the menu, construct the variables containing this information in the scope outside of `ask_args`, and use it as an upvalue in `handler`. See the [example](sample.md) and the usage of the variable `ft` therein.
+
 
 
 ### session
