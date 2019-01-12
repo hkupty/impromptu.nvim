@@ -60,6 +60,7 @@ local xf_args = {
       breadcrumbs = {},
       lines = args.options,
       handler = args.handler,
+      hls = {},
       sort = utils.default(args.sort, internals.shared.sort),
       is_compact = utils.default(args.compact_columns, false),
       lines_to_grid = utils.default(args.lines_to_grid, nil),

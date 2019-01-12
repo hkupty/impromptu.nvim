@@ -208,6 +208,7 @@ filter.do_hl = function(obj)
   end
 
   local exprs_sz = #obj.filter_exprs
+  table.insert(obj.hls, nvim.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
   for ix, expr in ipairs(obj.filter_exprs) do
     if expr ~= "" then
       local hl

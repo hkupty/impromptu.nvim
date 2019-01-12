@@ -222,6 +222,32 @@ ask.draw = function(obj, opts, window_ops)
   return content
  end
 
+ask.do_hl = function(obj, opts)
+  for ix = #obj.hls, 1, -1 do
+    nvim.nvim_call_function("matchdelete", {obj.hls[ix]})
+    table.remove(obj.hls, ix)
+  end
+
+  table.insert(obj.hls, nvim.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
+
+  for _, opt in ipairs(opts) do
+    local hl
+
+    if opt.selected then
+      hl = "String"
+    else
+      hl = "Comment"
+    end
+
+    table.insert(obj.hls,
+      nvim.nvim_call_function("matchadd",
+        {hl, utils.str_escape(ask.render_line(opt))}
+      )
+    )
+  end
+
+end
+
 ask.render = function(obj)
 
   local opts = ask.get_options(obj)
@@ -229,6 +255,7 @@ ask.render = function(obj)
   local content
 
   ask.do_mappings(obj, opts)
+  ask.do_hl(obj, opts)
   content = ask.draw(obj, opts, window_ops)
 
   nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
@@ -244,7 +271,10 @@ ask.handle = function(obj, option)
   if ask.tree(obj, option) then
     return false
   else
-    return obj:handler(option)
+    local lines = utils.chain(obj.breadcrumbs,
+    utils.partial_last(utils.interleave, "children"),
+    utils.partial(utils.get_in, obj.lines))
+    return obj:handler(lines[option])
   end
 end
 
