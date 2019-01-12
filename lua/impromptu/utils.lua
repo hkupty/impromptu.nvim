@@ -198,6 +198,10 @@ utils.displaywidth = function(expr, col)
   return vim.api.nvim_call_function('strdisplaywidth', { expr, col })
 end
 
+utils.str_escape = function(expr)
+  return vim.api.nvim_call_function('escape', { expr , '[]'})
+end
+
 utils.take = function(sz, iter, cinv, z)
   local count = 1
 
