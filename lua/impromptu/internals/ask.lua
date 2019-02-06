@@ -272,9 +272,11 @@ ask.handle = function(obj, option)
     return false
   else
     local lines = utils.chain(obj.breadcrumbs,
-    utils.partial_last(utils.interleave, "children"),
-    utils.partial(utils.get_in, obj.lines))
-    return obj:handler(lines[option])
+      utils.partial_last(utils.interleave, "children"),
+      utils.partial(utils.get_in, obj.lines))
+    local selected = utils.clone(lines[option])
+    selected.key = option
+    return obj:handler(selected)
   end
 end
 
