@@ -45,13 +45,13 @@ end
   )
 
   nvim.nvim_command(
-    "imap <buffer> <C-j> " ..
+    "imap <buffer> <C-n> " ..
     "<Cmd>lua require('impromptu').callback("  ..
     obj.session_id ..
     ", '__down')<CR>"
   )
   nvim.nvim_command(
-    "imap <buffer> <C-k> " ..
+    "imap <buffer> <C-p> " ..
     "<Cmd>lua require('impromptu').callback("  ..
     obj.session_id ..
     ", '__up')<CR>"
@@ -111,8 +111,25 @@ filter.draw = function(obj, opts, window_ops)
 filter.get_options = function(obj, window_ops)
   local options = {}
   local max_items = shared.draw_area_size(window_ops)
+  if obj.offset > max_items then
+    obj.slide = obj.slide + 1
+  elseif obj.offset < 1 then
+    obj.offset = 1
+    if obj.slide > 0 then
+      obj.slide = obj.slide - 1
+    end
+  end
 
-  for line in utils.take(max_items, obj.filter_fn(obj.filter_exprs, obj.lines)) do
+  local dropped = {}
+
+  for line in utils.take(
+    max_items,
+    utils.drop(
+      dropped,
+      obj.slide,
+      obj.filter_fn(obj.filter_exprs, obj.lines)
+      )
+    ) do
     table.insert(options, line)
   end
 
@@ -120,11 +137,8 @@ filter.get_options = function(obj, window_ops)
     return {}
   end
 
-  -- TODO allow sliding window
   if obj.offset >= #options then
     obj.offset = #options
-  elseif obj.offset < 1 then
-    obj.offset = 1
   end
 
   obj.selected = options[obj.offset]
