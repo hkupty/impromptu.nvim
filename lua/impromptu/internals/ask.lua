@@ -271,8 +271,8 @@ ask.handle = function(obj, option)
     local lines = utils.chain(obj.breadcrumbs,
       utils.partial_last(utils.interleave, "children"),
       utils.partial(utils.get_in, obj.lines))
-    local selected = utils.clone(lines[option])
-    selected.key = option
+    local selected = lines[option]
+    selected.index = option
     return obj:handler(selected)
   end
 end
