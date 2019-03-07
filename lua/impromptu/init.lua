@@ -1,4 +1,4 @@
--- luacheck: globals unpack
+-- luacheck: globals unpack vim
 local utils = require("impromptu.utils")
 local internals = require("impromptu.internals")
 local sessions = require("impromptu.sessions")
@@ -13,8 +13,11 @@ local config = {
   lru = 10
 }
 
+local cache = utils.LRU(config.lru)
+
 local proxy = function(session)
   local obj = {session_id = session}
+  table.insert(cache, 1, session)
 
   setmetatable(obj, {
     __index = function(_, key)
@@ -31,9 +34,13 @@ end
 
 local xf_args = {
   ask = function(args)
+    if args.question ~= nil then
+      args.title = args.question
+      vim.api.nvim_out_write("Use `title` instead of question.\n")
+    end
     return {
       quitable = utils.default(args.quitable, true),
-      header = args.question,
+      header = args.title,
       breadcrumbs = {},
       lines = args.options,
       handler = args.handler,
@@ -46,9 +53,13 @@ local xf_args = {
     }
   end,
   form = function(args)
+    if args.questions ~= nil then
+      args.options = args.questions
+      vim.api.nvim_out_write("Use `options` instead of questions.\n")
+    end
     return {
       header = args.title,
-      questions = args.questions,
+      questions = args.options,
       handler = args.handler,
       type = "form",
       config = utils.default(args.config, config),
@@ -62,6 +73,7 @@ local xf_args = {
       slide = 0,
       offset = 0,
       hls = {},
+      mappings = utils.default(args.mappings, {}),
       staged_expr = {},
       filter_exprs = {""},
       handler = args.handler,
@@ -109,14 +121,13 @@ impromptu.filter = function(args)
   return impromptu.run.filter(args):render()
 end
 
-
 impromptu.run = {}
 
 setmetatable(impromptu.run, {
   __index = function(tbl, key)
     return function(args)
-    return tbl(key, args)
-  end
+      return tbl(key, args)
+    end
   end,
   __call = function(_, key, args)
     return impromptu.session():stack(impromptu.new(key, args))
@@ -128,8 +139,8 @@ impromptu.new = {}
 setmetatable(impromptu.new, {
   __index = function(tbl, key)
     return function(args)
-    return tbl(key, args)
-  end
+      return tbl(key, args)
+    end
   end,
   __call = function(_, key, args)
     return xf_args[key](args)

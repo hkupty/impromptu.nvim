@@ -9,67 +9,38 @@ filter.render_line = function(line)
     return "   " .. line.description
 end
 
- filter.do_mappings = function(obj)
-  nvim.nvim_command("mapclear <buffer>")
-  nvim.nvim_command(
-    "imap <buffer> <BS> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__backspace')<CR>"
+local to_mapping = function(key, session_id, callback_id, modes)
+  if modes == nil or modes.i ~= nil then
+    nvim.nvim_command(
+      "imap <buffer> ".. key .." " ..
+      "<Cmd>lua require('impromptu').callback("  ..
+      session_id ..
+      ", '".. callback_id .."')<CR>"
     )
-  nvim.nvim_command(
-    "nmap <buffer> <CR> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__select')<CR>"
-  )
+  end
 
-  nvim.nvim_command(
-    "imap <buffer> <CR> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__select')<CR>"
-  )
+  if modes == nil or modes.n ~= nil then
+    nvim.nvim_command(
+      "nmap <buffer> ".. key .." " ..
+      "<Cmd>lua require('impromptu').callback("  ..
+      session_id ..
+      ", '".. callback_id .."')<CR>"
+    )
+  end
 
-  nvim.nvim_command(
-    "nmap <buffer> j " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__down')<CR>"
-  )
-  nvim.nvim_command(
-    "nmap <buffer> k " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__up')<CR>"
-  )
+end
 
-  nvim.nvim_command(
-    "imap <buffer> <C-n> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__down')<CR>"
-  )
-  nvim.nvim_command(
-    "imap <buffer> <C-p> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__up')<CR>"
-  )
+filter.do_mappings = function(obj)
+  nvim.nvim_command("mapclear <buffer>")
+  to_mapping("<BS>", obj.session_id, "__backspace")
+  to_mapping("<CR>", obj.session_id, "__select")
+  to_mapping("<C-n>", obj.session_id, "__down")
+  to_mapping("<C-p>", obj.session_id, "__up")
+  to_mapping("<C-c>", obj.session_id, "__quit")
 
-  nvim.nvim_command(
-    "imap <buffer> <C-c> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__quit')<CR>"
-  )
-
-  nvim.nvim_command(
-    "nmap <buffer> <C-c> " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    obj.session_id ..
-    ", '__quit')<CR>"
-  )
+  for key, callback_id in ipairs(obj.mappings) do
+    to_mapping(key, obj.session, callback_id)
+  end
 
   nvim.nvim_command(
     "augroup impromtpu | " ..
@@ -82,9 +53,9 @@ end
     obj.session_id ..
     ", \"__flush\")' | " ..
     "augroup END"
-  )
+    )
 
- end
+end
 
 filter.draw = function(obj, opts, window_ops)
   local content = {}
@@ -106,7 +77,7 @@ filter.draw = function(obj, opts, window_ops)
   add(shared.footer(table.concat(obj.filter_exprs, " "), window_ops))
 
   return content
- end
+end
 
 filter.get_options = function(obj, window_ops)
   local options = {}
@@ -135,6 +106,8 @@ filter.get_options = function(obj, window_ops)
 
   if #options == 0 then
     return {}
+  elseif #options == max_items then
+    obj.full = true
   end
 
   if obj.offset >= #options then
@@ -165,7 +138,7 @@ filter.filter_fn = function(filter_exprs, lines)
     end
 
     for _, filter_expr in ipairs(filter_exprs) do
-     if not string.find(itm.description:lower(), filter_expr:lower(), 1, true) then
+      if not string.find(itm.description:lower(), filter_expr:lower(), 1, true) then
         return nxt()
       end
     end
@@ -176,6 +149,8 @@ filter.filter_fn = function(filter_exprs, lines)
 end
 
 filter.append = function(obj, opt)
+
+  obj.full = nil
 
   if opt == " " then
     table.insert(obj.filter_exprs, "")
@@ -249,14 +224,14 @@ filter.render = function(obj)
     filter.do_mappings(obj)
   end
 
-  if #obj.staged_expr == 0 then
+  if #obj.staged_expr == 0 and obj.full == nil then
     local opts = filter.get_options(obj, window_ops)
     local content = filter.draw(obj, opts, window_ops)
 
     filter.do_hl(obj)
     nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     nvim.nvim_win_set_cursor(window_ops.window, {#content, utils.displaywidth(content[#content])})
-    nvim.nvim_command("startinsert")
+    nvim.nvim_command("startinsert!")
   end
 
   return obj
@@ -264,6 +239,7 @@ end
 
 filter.move_selection = function(obj, direction)
   obj.offset = obj.offset + direction
+  obj.full = nil
   return true
 end
 
@@ -281,7 +257,7 @@ filter.handle = function(obj, option)
     for _, opt in ipairs(obj.staged_expr) do
       filter.append(obj, opt)
     end
-      obj.staged_expr = {}
+    obj.staged_expr = {}
   else
     filter.stage(obj, option)
   end
@@ -290,8 +266,10 @@ filter.handle = function(obj, option)
 end
 
 filter.update = function(obj, data)
-  table.insert(obj.lines, data)
-  return filter.render(obj)
+  if data.description ~= "" then
+    table.insert(obj.lines, data)
+    return filter.render(obj)
+  end
 end
 
 return filter
