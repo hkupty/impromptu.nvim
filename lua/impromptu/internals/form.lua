@@ -115,6 +115,7 @@ form.render = function(obj)
 
     nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     form.set_cursor(obj, obj.current)
+    vim.api.nvim_command("startinsert")
   end
 
   return obj

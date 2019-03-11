@@ -3,11 +3,29 @@ local nvim = vim.api
 local shared = {}
 
 shared.show = function(obj)
+  local cwin = vim.api.nvim_call_function("win_getid", {})
+  local width = vim.api.nvim_call_function("winwidth", {cwin})
+  local height = vim.api.nvim_call_function("winheight", {cwin})
   if obj.buffer == nil then
-    nvim.nvim_command("botright 15 new")
-    local cb = nvim.nvim_get_current_buf()
-    -- TODO Change to API-based when nvim_win_set_option exists.
-    nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw nowrap")
+    local cb
+    if vim.api.nvim_open_win ~= nil then
+      cb = vim.api.nvim_create_buf(false, true)
+      local winid = vim.api.nvim_open_win(cb, true, width, 20, {
+        relative = "editor",
+        row = height - 20,
+        col = 0
+      })
+      vim.api.nvim_win_set_option(winid, "breakindent", true)
+      vim.api.nvim_win_set_option(winid, "number", false)
+      vim.api.nvim_win_set_option(winid, "relativenumber", false)
+      vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
+      obj:set("winid", winid)
+    else
+      nvim.nvim_command("botright 15 new")
+      cb = nvim.nvim_get_current_buf()
+      -- TODO Change to API-based when nvim_win_set_option exists.
+      nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw nowrap")
+    end
     obj:set("buffer", math.ceil(cb))
   end
 
@@ -18,15 +36,15 @@ shared.window_for_obj = function(obj)
   obj = shared.show(obj)
 
   local bufnr = nvim.nvim_call_function("bufnr", {obj.buffer})
-  local winnr = nvim.nvim_call_function("bufwinnr", {obj.buffer})
-  local window = nvim.nvim_call_function("win_getid", {winnr})
+  local window = obj.winid or nvim.nvim_call_function("win_getid", {
+    nvim.nvim_call_function("bufwinnr", {obj.buffer})
+  })
   local sz = nvim.nvim_win_get_width(window)
   local h = nvim.nvim_win_get_height(window)
   local top_offset = 0
   if obj.header ~= nil then
     top_offset = top_offset + 2
   end
-
 
   return {
     bufnr = bufnr,
