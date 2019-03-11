@@ -21,8 +21,8 @@ Take a look at the docs [here](http://impromptunvim.readthedocs.io/).
 ## TODO
 
 - [x] [Tree-based prompts](docs/tree-based.md)
-- [ ] Fuzzy finder
-- [ ] Highlighting
+- [x] Fuzzy finder
+- [x] Highlighting
 - [ ] Drawing enhancements
 - [ ] Restoring previous session
 - [ ] Async capabilities

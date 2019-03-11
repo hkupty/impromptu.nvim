@@ -101,10 +101,11 @@ form.draw = function(obj, window_ops)
 end
 
 form.render = function(obj)
-  local first_run = obj.buffer == nil
+  local first_run = obj.form == nil
   local window_ops = shared.window_for_obj(obj)
 
   if first_run then
+    obj.form = true
     -- FIXME: Stack/pop should cleanup type specific settings from buffer
     nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
     nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
@@ -114,6 +115,7 @@ form.render = function(obj)
 
     nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     form.set_cursor(obj, obj.current)
+    vim.api.nvim_command("startinsert")
   end
 
   return obj

@@ -178,7 +178,6 @@ utils.extend = function(tbls)
     end
   end
 
-
   return new
 end
 
@@ -215,15 +214,22 @@ utils.take = function(sz, iter, cinv, z)
   end, cinv, z
 end
 
-utils.drop = function(sz, iter, cinv, z)
-  local count = sz
+utils.drop = function(dropped, sz, iter, cinv, z)
+  local count = math.max(sz, 0)
 
   local function drop_iter(inv, c)
     local result = iter(inv, c)
+    if dropped ~= nil then
+      table.insert(dropped, result)
+    end
 
     if count > 0 then
       count = count - 1
-      return drop_iter(inv, c + 1)
+
+      if c ~= nil then
+        c = c + 1
+      end
+      return drop_iter(inv, c)
     end
 
     return result
@@ -234,6 +240,14 @@ end
 
 utils.replace_at = function(str, nv, at)
   return string.gsub(str, "().", {[at] = nv})
+end
+
+utils.table_from_iter = function(...)
+  local arr = {}
+  for k, v in ... do
+    arr[k] = v
+  end
+  return arr
 end
 
 return utils

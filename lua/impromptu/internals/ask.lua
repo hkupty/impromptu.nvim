@@ -233,17 +233,14 @@ ask.do_hl = function(obj, opts)
   for _, opt in ipairs(opts) do
     local hl
 
-    if opt.selected then
-      hl = "String"
-    else
-      hl = "Comment"
-    end
-
-    table.insert(obj.hls,
-      nvim.nvim_call_function("matchadd",
-        {hl, utils.str_escape(ask.render_line(opt))}
+    if opt.hl then
+      hl = opt.hl
+      table.insert(obj.hls,
+        nvim.nvim_call_function("matchadd",
+          {hl, utils.str_escape(ask.render_line(opt))}
+        )
       )
-    )
+    end
   end
 
 end
@@ -272,9 +269,11 @@ ask.handle = function(obj, option)
     return false
   else
     local lines = utils.chain(obj.breadcrumbs,
-    utils.partial_last(utils.interleave, "children"),
-    utils.partial(utils.get_in, obj.lines))
-    return obj:handler(lines[option])
+      utils.partial_last(utils.interleave, "children"),
+      utils.partial(utils.get_in, obj.lines))
+    local selected = lines[option]
+    selected.index = option
+    return obj:handler(selected)
   end
 end
 
