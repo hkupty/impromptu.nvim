@@ -79,7 +79,7 @@ form.draw = function(obj, window_ops)
     nvim.nvim_call_function("matchadd", {"Conceal", key .. "|", 10, -1, { conceal = "•"}})
     local ln_str = form.line(key, line)
     table.insert(content, ln_str)
-    obj.pos[key] = {#content, utils.displaywidth(ln_str) }
+    obj.pos[key] = {#content, utils.displaywidth(ln_str) + 1 }
 
     if ix ~= nil then
       order[ix] = key

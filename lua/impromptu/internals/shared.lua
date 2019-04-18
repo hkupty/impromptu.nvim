@@ -3,18 +3,19 @@ local nvim = vim.api
 local shared = {}
 
 shared.show = function(obj)
-  local cwin = vim.api.nvim_call_function("win_getid", {})
-  local width = vim.api.nvim_call_function("winwidth", {cwin})
-  local height = vim.api.nvim_call_function("winheight", {cwin})
+  local width = vim.api.nvim_get_option("columns")
+  local height = vim.api.nvim_get_option("lines")
   if obj.buffer == nil then
     local cb
     if vim.api.nvim_open_win ~= nil then
       cb = vim.api.nvim_create_buf(false, true)
-      local winid = vim.api.nvim_open_win(cb, true, width, 20, {
-        relative = "editor",
-        row = height - 20,
-        col = 0
-      })
+      local winid = vim.api.nvim_open_win(cb, true, {
+          width = width,
+          height = 20,
+          relative = "editor",
+          row = height - 20,
+          col = 0
+        })
       vim.api.nvim_win_set_option(winid, "breakindent", true)
       vim.api.nvim_win_set_option(winid, "number", false)
       vim.api.nvim_win_set_option(winid, "relativenumber", false)

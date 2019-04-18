@@ -13,7 +13,7 @@ local config = {
   lru = 10
 }
 
-local cache = utils.LRU(config.lru)
+local cache = setmetatable({}, utils.LRU(config.lru))
 
 local proxy = function(session)
   local obj = {session_id = session}
@@ -179,5 +179,35 @@ end
 impromptu.config.merged = function(obj)
   return utils.deep_merge(config, obj)
 end
+
+impromptu.previous = function()
+  local session = proxy(cache[1])
+  session.hls = {}
+  session:set("buffer", nil)
+  session:set("first", nil)
+  return internals.render(session)
+end
+
+--impromptu.recent = function(mode)
+  --return impromptu[mode or 'filter']{
+      --title = "",
+      --options = utils.map(
+        --cache,
+        --function(id)
+          --return {
+            --description = proxy(id).header,
+            --id = id
+          --}
+        --end
+        --),
+      --handler = function(_, selected)
+        --local session = proxy(selected)
+        --session.buffer = nil
+        --session.first = nil
+        --session:render()
+        --return true
+      --end
+  --}
+--end
 
 return impromptu
