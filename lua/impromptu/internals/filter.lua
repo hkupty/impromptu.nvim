@@ -10,23 +10,19 @@ filter.render_line = function(line)
 end
 
 local to_mapping = function(key, session_id, callback_id, modes)
-  if modes == nil or modes.i ~= nil then
-    nvim.nvim_command(
-      "imap <buffer> ".. key .." " ..
-      "<Cmd>lua require('impromptu').callback("  ..
-      session_id ..
-      ", '".. callback_id .."')<CR>"
-    )
-  end
+  nvim.nvim_command(
+    "imap <buffer> ".. key .." " ..
+    "<Cmd>lua require('impromptu').callback("  ..
+    session_id ..
+    ", '".. callback_id .."')<CR>"
+  )
 
-  if modes == nil or modes.n ~= nil then
-    nvim.nvim_command(
-      "nmap <buffer> ".. key .." " ..
-      "<Cmd>lua require('impromptu').callback("  ..
-      session_id ..
-      ", '".. callback_id .."')<CR>"
-    )
-  end
+  nvim.nvim_command(
+    "nmap <buffer> ".. key .." " ..
+    "<Cmd>lua require('impromptu').callback("  ..
+    session_id ..
+    ", '".. callback_id .."')<CR>"
+  )
 
 end
 
@@ -38,8 +34,8 @@ filter.do_mappings = function(obj)
   to_mapping("<C-p>", obj.session_id, "__up")
   to_mapping("<C-c>", obj.session_id, "__quit")
 
-  for key, callback_id in ipairs(obj.mappings) do
-    to_mapping(key, obj.session, callback_id)
+  for key, callback_id in pairs(obj.mappings) do
+    to_mapping(key, obj.session_id, callback_id)
   end
 
   nvim.nvim_command(
@@ -258,6 +254,8 @@ filter.handle = function(obj, option)
       filter.append(obj, opt)
     end
     obj.staged_expr = {}
+  elseif utils.starts_with(option, "__") then
+    return obj:handler(option)
   else
     filter.stage(obj, option)
   end

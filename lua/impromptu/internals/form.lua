@@ -16,34 +16,31 @@ form.get_header = function(obj)
     header = obj.header
   end
 
-   return header
- end
+  return header
+end
 
- form.do_mappings = function(obj)
+local to_mapping = function(key, session_id, callback_id, modes)
+  nvim.nvim_command(
+    "imap <buffer> ".. key .." " ..
+    "<Cmd>lua require('impromptu').callback("  ..
+    session_id ..
+    ", '".. callback_id .."')<CR>"
+  )
+
+  nvim.nvim_command(
+    "nmap <buffer> ".. key .." " ..
+    "<Cmd>lua require('impromptu').callback("  ..
+    session_id ..
+    ", '".. callback_id .."')<CR>"
+  )
+end
+
+form.do_mappings = function(obj)
   nvim.nvim_command("mapclear <buffer>")
-  nvim.nvim_command(
-    "nmap <buffer> <Tab> <Cmd>lua require('impromptu').callback(" ..
-    obj.session_id ..
-    ", '__next')<CR>"
-  )
-  nvim.nvim_command(
-    "imap <buffer> <Tab> <Cmd>lua require('impromptu').callback(" ..
-    obj.session_id ..
-    ", '__next')<CR>"
-  )
-
-  nvim.nvim_command(
-    "nmap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
-    obj.session_id ..
-    ", '__submit')<CR>"
-  )
-
-  nvim.nvim_command(
-    "imap <buffer> <CR> <Cmd>lua require('impromptu').callback(" ..
-    obj.session_id ..
-    ", '__submit')<CR>"
-  )
- end
+  to_mapping("<Tab>", obj.session_id, "__next")
+  to_mapping("<CR>", obj.session_id, "__submit")
+  to_mapping("<C-c>", obj.session_id, "__quit")
+end
 
 form.set_cursor = function(obj, key)
   local pos = obj.pos[key]
@@ -69,9 +66,7 @@ form.draw = function(obj, window_ops)
     table.insert(content, shared.div(window_ops.width))
   end
 
-  table.insert(content, "")
-
-  for key, line in pairs(obj.questions) do
+  for key, line in pairs(obj.lines) do
     if first == nil then
       first = key
     end
@@ -79,7 +74,7 @@ form.draw = function(obj, window_ops)
     nvim.nvim_call_function("matchadd", {"Conceal", key .. "|", 10, -1, { conceal = "•"}})
     local ln_str = form.line(key, line)
     table.insert(content, ln_str)
-    obj.pos[key] = {#content, utils.displaywidth(ln_str) }
+    obj.pos[key] = {#content, utils.strwidth(ln_str) }
 
     if ix ~= nil then
       order[ix] = key

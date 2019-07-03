@@ -197,6 +197,10 @@ utils.displaywidth = function(expr, col)
   return vim.api.nvim_call_function('strdisplaywidth', { expr, col })
 end
 
+utils.strwidth = function(expr, col)
+  return vim.api.nvim_call_function('strwidth', { expr, col })
+end
+
 utils.str_escape = function(expr)
   return vim.api.nvim_call_function('escape', { expr , '[]'})
 end
@@ -248,6 +252,10 @@ utils.table_from_iter = function(...)
     arr[k] = v
   end
   return arr
+end
+
+utils.starts_with = function(str, begining)
+  return begining == "" or string.sub(str, 1, #begining) == begining
 end
 
 return utils

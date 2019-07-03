@@ -2,19 +2,50 @@
 local nvim = vim.api
 local shared = {}
 
+local bottom = function(_)
+  local width = vim.api.nvim_get_option("columns")
+  local height = vim.api.nvim_get_option("lines")
+  return {
+    relative = "editor",
+    width = width,
+    height = 20,
+    row = height - 20,
+    col = 0
+  }
+end
+
+local center = function(obj)
+  local width = vim.api.nvim_get_option("columns")
+  local height = vim.api.nvim_get_option("lines")
+  local offset = #obj.lines
+
+  if obj.header ~= nil then
+    offset = offset + 4
+  end
+
+  return {
+    relative = "editor",
+    width = math.ceil(width * 0.5),
+    height = offset,
+    row = math.ceil(height * 0.5) - math.ceil(offset * 0.5),
+    col = math.ceil(width * 0.25)
+  }
+end
+
+
 shared.show = function(obj)
   local cwin = vim.api.nvim_call_function("win_getid", {})
-  local width = vim.api.nvim_call_function("winwidth", {cwin})
-  local height = vim.api.nvim_call_function("winheight", {cwin})
   if obj.buffer == nil then
     local cb
     if vim.api.nvim_open_win ~= nil then
       cb = vim.api.nvim_create_buf(false, true)
-      local winid = vim.api.nvim_open_win(cb, true, width, 20, {
-        relative = "editor",
-        row = height - 20,
-        col = 0
-      })
+      local location
+      if obj.location == "center" then
+        location = center
+      else
+        location = bottom
+      end
+      local winid = vim.api.nvim_open_win(cb, true, location(obj))
       vim.api.nvim_win_set_option(winid, "breakindent", true)
       vim.api.nvim_win_set_option(winid, "number", false)
       vim.api.nvim_win_set_option(winid, "relativenumber", false)

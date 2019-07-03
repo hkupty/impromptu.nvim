@@ -42,6 +42,7 @@ local xf_args = {
       quitable = utils.default(args.quitable, true),
       header = args.title,
       breadcrumbs = {},
+      location = utils.default(args.location, "bottom"),
       lines = args.options,
       handler = args.handler,
       hls = {},
@@ -59,7 +60,8 @@ local xf_args = {
     end
     return {
       header = args.title,
-      questions = args.options,
+      location = utils.default(args.location, "center"),
+      lines = args.options,
       handler = args.handler,
       type = "form",
       config = utils.default(args.config, config),
@@ -69,6 +71,7 @@ local xf_args = {
     return {
       header = args.title,
       lines = args.options,
+      location = utils.default(args.location, "bottom"),
       update = internals.types.filter.update,
       slide = 0,
       offset = 0,
