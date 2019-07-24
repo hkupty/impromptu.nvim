@@ -192,7 +192,7 @@ ask.get_header = function(obj)
 
    for _, v in ipairs(opts) do
      nvim.nvim_command(
-       "map <buffer> " ..
+       "map <nowait> <buffer> " ..
        v.key ..
        " <Cmd>lua require('impromptu').callback("  ..
        obj.session_id ..
