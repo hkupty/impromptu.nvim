@@ -10,14 +10,14 @@ filter.render_line = function(line)
 end
 
 local to_mapping = function(key, session_id, callback_id, modes)
-  nvim.nvim_command(
+  vim.api.nvim_command(
     "imap <buffer> ".. key .." " ..
     "<Cmd>lua require('impromptu').callback("  ..
     session_id ..
     ", '".. callback_id .."')<CR>"
   )
 
-  nvim.nvim_command(
+  vim.api.nvim_command(
     "nmap <buffer> ".. key .." " ..
     "<Cmd>lua require('impromptu').callback("  ..
     session_id ..
@@ -27,7 +27,7 @@ local to_mapping = function(key, session_id, callback_id, modes)
 end
 
 filter.do_mappings = function(obj)
-  nvim.nvim_command("mapclear <buffer>")
+  vim.api.nvim_command("mapclear <buffer>")
   to_mapping("<BS>", obj.session_id, "__backspace")
   to_mapping("<CR>", obj.session_id, "__select")
   to_mapping("<C-n>", obj.session_id, "__down")
@@ -38,7 +38,7 @@ filter.do_mappings = function(obj)
     to_mapping(key, obj.session_id, callback_id)
   end
 
-  nvim.nvim_command(
+  vim.api.nvim_command(
     "augroup impromtpu | " ..
     "au! InsertCharPre <buffer="  .. obj.buffer .. "> " ..
     "exe 'lua require(\"impromptu\").callback(" ..
@@ -188,12 +188,12 @@ end
 
 filter.do_hl = function(obj)
   for ix = #obj.hls, 1, -1 do
-    nvim.nvim_call_function("matchdelete", {obj.hls[ix]})
+    vim.api.nvim_call_function("matchdelete", {obj.hls[ix]})
     table.remove(obj.hls, ix)
   end
 
   local exprs_sz = #obj.filter_exprs
-  table.insert(obj.hls, nvim.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
+  table.insert(obj.hls, vim.api.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
   for ix, expr in ipairs(obj.filter_exprs) do
     if expr ~= "" then
       local hl
@@ -204,7 +204,7 @@ filter.do_hl = function(obj)
         hl = "Function"
       end
 
-      table.insert(obj.hls, nvim.nvim_call_function("matchadd", {hl, "\\c" .. expr}))
+      table.insert(obj.hls, vim.api.nvim_call_function("matchadd", {hl, "\\c" .. expr}))
     end
   end
 
@@ -216,7 +216,7 @@ filter.render = function(obj)
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
 
   if first_run then
-    nvim.nvim_call_function("matchadd", {"WarningMsg", " →"})
+    vim.api.nvim_call_function("matchadd", {"WarningMsg", " →"})
     filter.do_mappings(obj)
   end
 
@@ -225,9 +225,9 @@ filter.render = function(obj)
     local content = filter.draw(obj, opts, window_ops)
 
     filter.do_hl(obj)
-    nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
-    nvim.nvim_win_set_cursor(window_ops.window, {#content, utils.displaywidth(content[#content])})
-    nvim.nvim_command("startinsert!")
+    vim.api.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
+    vim.api.nvim_win_set_cursor(window_ops.window, {#content, utils.displaywidth(content[#content])})
+    vim.api.nvim_command("startinsert!")
   end
 
   return obj
@@ -241,7 +241,7 @@ end
 
 filter.handle = function(obj, option)
   if option == "__select" then
-    nvim.nvim_command("stopinsert")
+    vim.api.nvim_command("stopinsert")
     return obj:handler(obj.selected)
   elseif option == "__up" then
     filter.move_selection(obj, -1)

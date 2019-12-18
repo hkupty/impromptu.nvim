@@ -52,10 +52,10 @@ shared.show = function(obj)
       vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
       obj:set("winid", winid)
     else
-      nvim.nvim_command("botright 15 new")
-      cb = nvim.nvim_get_current_buf()
+      vim.api.nvim_command("botright 15 new")
+      cb = vim.api.nvim_get_current_buf()
       -- TODO Change to API-based when nvim_win_set_option exists.
-      nvim.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw nowrap")
+      vim.api.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw nowrap")
     end
     obj:set("buffer", math.ceil(cb))
   end
@@ -66,12 +66,12 @@ end
 shared.window_for_obj = function(obj)
   obj = shared.show(obj)
 
-  local bufnr = nvim.nvim_call_function("bufnr", {obj.buffer})
-  local window = obj.winid or nvim.nvim_call_function("win_getid", {
-    nvim.nvim_call_function("bufwinnr", {obj.buffer})
+  local bufnr = vim.api.nvim_call_function("bufnr", {obj.buffer})
+  local window = obj.winid or vim.api.nvim_call_function("win_getid", {
+    vim.api.nvim_call_function("bufwinnr", {obj.buffer})
   })
-  local sz = nvim.nvim_win_get_width(window)
-  local h = nvim.nvim_win_get_height(window)
+  local sz = vim.api.nvim_win_get_width(window)
+  local h = vim.api.nvim_win_get_height(window)
   local top_offset = 0
   if obj.header ~= nil then
     top_offset = top_offset + 2
