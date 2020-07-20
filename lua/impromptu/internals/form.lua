@@ -1,5 +1,4 @@
 -- luacheck: globals unpack vim utf8
-local nvim = vim.api
 local utils = require("impromptu.utils")
 local shared = require("impromptu.internals.shared")
 
@@ -20,14 +19,14 @@ form.get_header = function(obj)
 end
 
 local to_mapping = function(key, session_id, callback_id, modes)
-  nvim.nvim_command(
+  vim.api.nvim_command(
     "imap <buffer> ".. key .." " ..
     "<Cmd>lua require('impromptu').callback("  ..
     session_id ..
     ", '".. callback_id .."')<CR>"
   )
 
-  nvim.nvim_command(
+  vim.api.nvim_command(
     "nmap <buffer> ".. key .." " ..
     "<Cmd>lua require('impromptu').callback("  ..
     session_id ..
@@ -36,7 +35,7 @@ local to_mapping = function(key, session_id, callback_id, modes)
 end
 
 form.do_mappings = function(obj)
-  nvim.nvim_command("mapclear <buffer>")
+  vim.api.nvim_command("mapclear <buffer>")
   to_mapping("<Tab>", obj.session_id, "__next")
   to_mapping("<CR>", obj.session_id, "__submit")
   to_mapping("<C-c>", obj.session_id, "__quit")
@@ -46,7 +45,7 @@ form.set_cursor = function(obj, key)
   local pos = obj.pos[key]
   local window_ops = shared.window_for_obj(obj)
 
-  nvim.nvim_win_set_cursor(window_ops.window, pos)
+  vim.api.nvim_win_set_cursor(window_ops.window, pos)
   obj.current = key
 end
 
@@ -56,7 +55,7 @@ form.draw = function(obj, window_ops)
   local order = {}
   local ix
   obj.pos = {}
-  nvim.nvim_command("setl conceallevel=2 concealcursor=nvic")
+  vim.api.nvim_command("setl conceallevel=2 concealcursor=nvic")
 
 
   local content = {}
@@ -71,7 +70,7 @@ form.draw = function(obj, window_ops)
       first = key
     end
 
-    nvim.nvim_call_function("matchadd", {"Conceal", key .. "|", 10, -1, { conceal = "•"}})
+    vim.fn.matchadd("Conceal", key .. "|", 10, -1, { conceal = "•"})
     local ln_str = form.line(key, line)
     table.insert(content, ln_str)
     obj.pos[key] = {#content, utils.strwidth(ln_str) }
@@ -102,13 +101,13 @@ form.render = function(obj)
   if first_run then
     obj.form = true
     -- FIXME: Stack/pop should cleanup type specific settings from buffer
-    nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
-    nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
+    vim.api.nvim_buf_set_option(obj.buffer, "modifiable", true)
+    vim.api.nvim_buf_set_option(obj.buffer, "readonly", false)
 
     form.do_mappings(obj)
     local content = form.draw(obj, window_ops)
 
-    nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
+    vim.api.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     form.set_cursor(obj, obj.current)
     vim.api.nvim_command("startinsert")
   end
@@ -117,7 +116,7 @@ form.render = function(obj)
 end
 
 form.handle = function(obj, arg)
-  local lines = nvim.nvim_buf_get_lines(obj.buffer, 0, -1, false)
+  local lines = vim.api.nvim_buf_get_lines(obj.buffer, 0, -1, false)
   local answers = {}
 
   if arg == "__submit" then
@@ -128,8 +127,8 @@ form.handle = function(obj, arg)
       end
     end
 
-    if nvim.nvim_get_mode().mode ~= "n" then
-      nvim.nvim_command("stopinsert")
+    if vim.api.nvim_get_mode().mode ~= "n" then
+      vim.api.nvim_command("stopinsert")
     end
 
     return obj:handler(answers)

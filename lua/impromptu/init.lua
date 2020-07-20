@@ -3,8 +3,6 @@ local utils = require("impromptu.utils")
 local internals = require("impromptu.internals")
 local sessions = require("impromptu.sessions")
 
-local impromptu = {}
-
 local config = {
   ui = {
     div = "─",
@@ -38,7 +36,7 @@ local xf_args = {
       args.title = args.question
       vim.api.nvim_out_write("Use `title` instead of question.\n")
     end
-    return {
+    local ref = {
       quitable = utils.default(args.quitable, true),
       header = args.title,
       breadcrumbs = {},
@@ -50,6 +48,19 @@ local xf_args = {
       is_compact = utils.default(args.compact_columns, false),
       lines_to_grid = utils.default(args.lines_to_grid, nil),
       type = "ask",
+      config = utils.default(args.config, config),
+    }
+    return ref
+  end,
+  showcase = function(args)
+    return {
+      header = args.title,
+      location = utils.default(args.location, "center"),
+      lines = args.options,
+      height = 10,
+      actions = args.actions,
+      handler = args.handler,
+      type = "showcase",
       config = utils.default(args.config, config),
     }
   end,
@@ -88,7 +99,8 @@ local xf_args = {
 
 }
 
-impromptu.session = function()
+
+local session = function()
   local session = math.random(10000, 99999)
 
   sessions[session] = {
@@ -112,17 +124,17 @@ impromptu.session = function()
   return proxy(session)
 end
 
-impromptu.ask = function(args)
-  return impromptu.run.ask(args):render()
-end
-
-impromptu.form = function(args)
-  return impromptu.run.form(args):render()
-end
-
-impromptu.filter = function(args)
-  return impromptu.run.filter(args):render()
-end
+local impromptu = setmetatable({session = session}, {
+  __index = function(tbl, key)
+    local v = rawget(xf_args, key)
+    if v ~= nil then
+      return function(args)
+        return session():stack(v(args)):render()
+      end
+    end
+    return rawget(tbl, key)
+  end
+})
 
 impromptu.run = {}
 

@@ -1,5 +1,4 @@
 -- luacheck: globals unpack vim
-local nvim = vim.api
 local utils = require("impromptu.utils")
 local shared = require("impromptu.internals.shared")
 
@@ -188,12 +187,12 @@ end
 
 filter.do_hl = function(obj)
   for ix = #obj.hls, 1, -1 do
-    vim.api.nvim_call_function("matchdelete", {obj.hls[ix]})
+    vim.fn.matchdelete(obj.hls[ix])
     table.remove(obj.hls, ix)
   end
 
   local exprs_sz = #obj.filter_exprs
-  table.insert(obj.hls, vim.api.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
+  table.insert(obj.hls, vim.fn.matchaddpos("Operator", {1, 20}))
   for ix, expr in ipairs(obj.filter_exprs) do
     if expr ~= "" then
       local hl
@@ -204,7 +203,7 @@ filter.do_hl = function(obj)
         hl = "Function"
       end
 
-      table.insert(obj.hls, vim.api.nvim_call_function("matchadd", {hl, "\\c" .. expr}))
+      table.insert(obj.hls, vim.fn.matchadd(hl, "\\c" .. expr))
     end
   end
 
@@ -216,7 +215,7 @@ filter.render = function(obj)
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
 
   if first_run then
-    vim.api.nvim_call_function("matchadd", {"WarningMsg", " →"})
+    vim.fn.matchadd("WarningMsg", " →")
     filter.do_mappings(obj)
   end
 

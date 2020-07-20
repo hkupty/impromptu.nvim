@@ -10,9 +10,10 @@ local utils = require("impromptu.utils")
 
 check.for_options = function(options, expected_grid, col_size)
     local ask = require('impromptu.internals.ask')
+    local lines_to_grid = require('impromptu.internals.shared').lines_to_grid
     local rendered_options = utils.map(options, ask.render_line)
     local window_ops = {height = col_size, top_offset = 0, bottom_offset = 0}
-    local grid = ask.lines_to_grid(rendered_options, window_ops)
+    local grid = lines_to_grid(rendered_options, window_ops)
 
     assert.are_same(grid, expected_grid)
     return grid
