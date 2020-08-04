@@ -176,6 +176,18 @@ impromptu.callback = function(session, option)
   end
 end
 
+impromptu.recent = setmetatable({}, {
+    __index = function(_, session)
+      local ref = proxy(session)
+
+      ref:set("winid", nil)
+      ref:set("buffer", nil)
+      ref:set("destroyed", nil)
+
+      return ref
+    end
+  })
+
 impromptu.config = {}
 
 impromptu.config.set = function(obj)

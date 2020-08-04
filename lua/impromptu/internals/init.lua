@@ -24,6 +24,8 @@ internals.destroy = function(obj_or_session)
   vim.api.nvim_win_close(window, true)
   vim.api.nvim_command("stopinsert")
 
+  obj.hls = {}
+
   obj.destroyed = true
 end
 
