@@ -11,11 +11,8 @@ local config = {
   lru = 10
 }
 
-local cache = utils.LRU(config.lru)
-
 local proxy = function(session)
   local obj = {session_id = session}
-  table.insert(cache, 1, session)
 
   setmetatable(obj, {
     __index = function(_, key)
