@@ -48,38 +48,40 @@ shared.resize = function(obj)
 end
 
 shared.show = function(obj)
-  local cwin = vim.fn.win_getid()
-  if obj.buffer == nil then
-    local cb
-    cb = vim.api.nvim_create_buf(false, true)
-    local location
-    if obj.location == "center" then
-      location = center
-    else
-      location = bottom
-    end
-    local winid = vim.api.nvim_open_win(cb, true, location(obj))
-    vim.api.nvim_win_set_option(winid, "breakindent", true)
-    vim.api.nvim_win_set_option(winid, "number", false)
-    vim.api.nvim_win_set_option(winid, "relativenumber", false)
-    vim.api.nvim_win_set_option(winid, "fillchars", "eob: ")
-    vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
-    obj:set("winid", winid)
-    obj:set("buffer", math.ceil(cb))
+  local cb = vim.api.nvim_create_buf(false, true)
+  local location
+
+  if obj.location == "center" then
+    location = center
+  else
+    location = bottom
   end
+
+  local winid = vim.api.nvim_open_win(cb, true, location(obj))
+
+  vim.api.nvim_win_set_option(winid, "breakindent", true)
+  vim.api.nvim_win_set_option(winid, "number", false)
+  vim.api.nvim_win_set_option(winid, "relativenumber", false)
+  vim.api.nvim_win_set_option(winid, "fillchars", "eob: ")
+  vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
+
+  obj:set("winid", winid)
+  obj:set("buffer", math.ceil(cb))
 
   return obj
 end
 
 shared.window_for_obj = function(obj)
-  obj = shared.show(obj)
+  if obj.winid == nil then
+    obj = shared.show(obj)
+  end
 
   local bufnr = vim.api.nvim_call_function("bufnr", {obj.buffer})
-  local window = obj.winid or vim.api.fn.win_getid(vim.fn.bufwinnr(obj.buffer))
-  local sz = vim.api.nvim_win_get_width(window)
-  local h = vim.api.nvim_win_get_height(window)
+  local sz = vim.api.nvim_win_get_width(obj.winid)
+  local h = vim.api.nvim_win_get_height(obj.winid)
   local top_offset = 0
   local bottom_offset = 0
+
   if obj.header ~= nil then
     top_offset = top_offset + 2
   end
@@ -89,8 +91,8 @@ shared.window_for_obj = function(obj)
   end
 
   return {
-    bufnr = bufnr,
-    window = window,
+    bufnr = vim.fn.bufnr(obj.buffer),
+    window = obj.winid,
     width = sz,
     height = h,
     top_offset = top_offset,
