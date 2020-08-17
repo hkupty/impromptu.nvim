@@ -29,6 +29,8 @@ filter.do_mappings = function(obj)
   vim.api.nvim_command("mapclear <buffer>")
   to_mapping("<BS>", obj.session_id, "__backspace")
   to_mapping("<CR>", obj.session_id, "__select")
+  to_mapping("<C-l>", obj.session_id, "__clear")
+  to_mapping("<C-x>", obj.session_id, "__clear_word")
   to_mapping("<C-n>", obj.session_id, "__down")
   to_mapping("<C-p>", obj.session_id, "__up")
   to_mapping("<C-c>", obj.session_id, "__quit")
@@ -238,6 +240,15 @@ filter.move_selection = function(obj, direction)
   return true
 end
 
+filter.clear_word = function(obj)
+  local filter_exprs = {""}
+  for i=(#obj.filter_exprs - 1), 1, -1 do
+    filter_exprs[i] = obj.filter_exprs[i]
+  end
+  obj.filter_exprs = filter_exprs
+
+end
+
 filter.handle = function(obj, option)
   if option == "__select" then
     vim.api.nvim_command("stopinsert")
@@ -248,6 +259,10 @@ filter.handle = function(obj, option)
     filter.move_selection(obj, 1)
   elseif option == "__backspace" then
     filter.append(obj, -1)
+  elseif option == "__clear" then
+    obj.filter_exprs = {""}
+  elseif option == "__clear_word" then
+    filter.clear_word(obj)
   elseif option == "__flush" then
     for _, opt in ipairs(obj.staged_expr) do
       filter.append(obj, opt)
