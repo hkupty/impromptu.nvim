@@ -158,7 +158,7 @@ utils.deep_merge = function(tgt, src)
             dst[k] = {}
          end
          if type(dst[k]) == "table" then
-            utils.deep_merge(dst[k], v)
+            dst[k] = utils.deep_merge(dst[k], v)
          else
             dst[k] = v
          end
