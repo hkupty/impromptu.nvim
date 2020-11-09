@@ -27,6 +27,10 @@ internals.destroy = function(obj_or_session)
   obj.hls = {}
 
   obj.destroyed = true
+  local cleanup_fn = internals.types[obj.type].cleanup
+  if cleanup_fn ~= nil then
+    return cleanup_fn(obj)
+  end
 end
 
 internals.render = function(obj)
