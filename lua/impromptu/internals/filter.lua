@@ -104,8 +104,8 @@ end
 
 filter._set_hl = function(_, _win, bufnr, _top, _bot)
   local obj = proxy.reverse_lookup("buffer", bufnr)
-  if obj == nil or obj.type ~= "filter"  then
-    return true
+  if obj == nil then
+    return false
   end
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
   local lines = vim.api.nvim_buf_get_lines(
