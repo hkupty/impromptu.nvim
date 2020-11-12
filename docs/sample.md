@@ -20,7 +20,7 @@ _G.set_preferred_repl = function()
         }
   end
 
-  impromptu.core.ask{
+  impromptu.ask{
     question = "Select preferred repl",
     options = opts,
     handler = function(_, opt)
