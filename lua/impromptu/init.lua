@@ -66,14 +66,10 @@ local xf_args = {
     return utils.deep_merge(ref, config.get().showcase or {})
   end,
   form = function(args)
-    if args.questions ~= nil then
-      args.options = args.questions
-      vim.api.nvim_out_write("Use `options` instead of questions.\n")
-    end
     local ref = {
       header = args.title,
       location = utils.default(args.location, "center"),
-      lines = args.options,
+      lines = utils.key_to_attr(args.options, "index"),
       handler = args.handler,
       type = "form",
       config = utils.default(args.config, config),
