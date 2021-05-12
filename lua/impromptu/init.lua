@@ -2,34 +2,32 @@
 local utils = require("impromptu.utils")
 local internals = require("impromptu.internals")
 local sessions = require("impromptu.sessions")
-
-local impromptu = {}
+local proxy = require("impromptu.proxy").proxy
 
 local config = {
   ui = {
     div = "─",
     sub_div = "•"
   },
-  lru = 10
+  lru = 10,
+  filter = {
+    do_hl = true
+  }
+
 }
 
-local cache = utils.LRU(config.lru)
+config.set = function(obj)
+  config = config.merged(obj)
 
-local proxy = function(session)
-  local obj = {session_id = session}
-  table.insert(cache, 1, session)
+  return config.get()
+end
 
-  setmetatable(obj, {
-    __index = function(_, key)
-      local s = sessions[session]
-      return s._col[#s._col][key] or s[key]
-    end,
-    __newindex = function(_, key, value)
-      local s = sessions[session]
-      s._col[#s._col][key] = value
-    end})
+config.get = function()
+  return utils.clone(config)
+end
 
-    return obj
+config.merged = function(obj)
+  return utils.deep_merge(config, obj)
 end
 
 local xf_args = {
@@ -38,7 +36,7 @@ local xf_args = {
       args.title = args.question
       vim.api.nvim_out_write("Use `title` instead of question.\n")
     end
-    return {
+    local ref = {
       quitable = utils.default(args.quitable, true),
       header = args.title,
       breadcrumbs = {},
@@ -52,23 +50,34 @@ local xf_args = {
       type = "ask",
       config = utils.default(args.config, config),
     }
+    return utils.deep_merge(ref, config.get().ask or {})
   end,
-  form = function(args)
-    if args.questions ~= nil then
-      args.options = args.questions
-      vim.api.nvim_out_write("Use `options` instead of questions.\n")
-    end
-    return {
+  showcase = function(args)
+    local ref = {
       header = args.title,
       location = utils.default(args.location, "center"),
       lines = args.options,
+      height = 10,
+      actions = args.actions,
+      handler = args.handler,
+      type = "showcase",
+      config = utils.default(args.config, config),
+    }
+    return utils.deep_merge(ref, config.get().showcase or {})
+  end,
+  form = function(args)
+    local ref = {
+      header = args.title,
+      location = utils.default(args.location, "center"),
+      lines = utils.key_to_attr(args.options, "index"),
       handler = args.handler,
       type = "form",
       config = utils.default(args.config, config),
     }
+    return utils.deep_merge(ref, config.get().form or {})
   end,
   filter = function(args)
-    return {
+    local ret = {
       header = args.title,
       lines = args.options,
       location = utils.default(args.location, "bottom"),
@@ -84,11 +93,12 @@ local xf_args = {
       type = "filter",
       config = utils.default(args.config, config),
     }
+    return utils.deep_merge(ret, config.get().filter or {})
   end,
-
 }
 
-impromptu.session = function()
+
+local session = function()
   local session = math.random(10000, 99999)
 
   sessions[session] = {
@@ -112,17 +122,17 @@ impromptu.session = function()
   return proxy(session)
 end
 
-impromptu.ask = function(args)
-  return impromptu.run.ask(args):render()
-end
-
-impromptu.form = function(args)
-  return impromptu.run.form(args):render()
-end
-
-impromptu.filter = function(args)
-  return impromptu.run.filter(args):render()
-end
+local impromptu = setmetatable({session = session}, {
+  __index = function(tbl, key)
+    local v = rawget(xf_args, key)
+    if v ~= nil then
+      return function(args)
+        return session():stack(v(args)):render()
+      end
+    end
+    return rawget(tbl, key)
+  end
+})
 
 impromptu.run = {}
 
@@ -150,8 +160,8 @@ setmetatable(impromptu.new, {
   end
 })
 
-impromptu.callback = function(session, option)
-  local obj = proxy(session)
+impromptu.callback = function(session_id, option)
+  local obj = proxy(session_id)
 
   if obj == nil then
      return
@@ -167,20 +177,63 @@ impromptu.callback = function(session, option)
   end
 end
 
-impromptu.config = {}
+impromptu.recent = setmetatable({}, {
+    __index = function(_, session_id)
+      local ref = proxy(session_id)
 
-impromptu.config.set = function(obj)
-  config = impromptu.config.merged(obj)
+      ref:set("winid", nil)
+      ref:set("buffer", nil)
+      ref:set("destroyed", nil)
 
-  return impromptu.config.get()
+      return ref
+    end
+  })
+
+local function cfgproxy(map)
+  return setmetatable(map, {
+    __index = function(tbl, k)
+      local path = {}
+
+      local prevpath = rawget(tbl, "path")
+
+      if prevpath ~= nil then
+        path = prevpath
+      end
+      table.insert(path, k)
+
+      return cfgproxy({path = path})
+    end,
+    __newindex = function(tbl, k, v)
+      local cfg = {}
+      cfg[k] = v
+      local pathsz = #tbl.path
+
+      for i = 1, pathsz do
+        local oldcfg = cfg
+        cfg = {}
+        cfg[tbl.path[pathsz + 1 - i]] = oldcfg
+      end
+
+      return config.set(cfg)
+    end,
+    __call = function(tbl, _default)
+      local prevpath = rawget(tbl, "path")
+      local cfg = config.get()
+      for _, k in ipairs(prevpath) do
+        cfg = cfg[k]
+        if cfg == nil then
+          break
+        end
+      end
+      return cfg or _default or {}
+    end
+  })
 end
 
-impromptu.config.get = function()
-  return utils.clone(config)
-end
+impromptu.config = cfgproxy{}
 
-impromptu.config.merged = function(obj)
-  return utils.deep_merge(config, obj)
-end
+impromptu.config.set = config.set
+impromptu.config.get = config.get
+impromptu.config.merged = config.merged
 
 return impromptu

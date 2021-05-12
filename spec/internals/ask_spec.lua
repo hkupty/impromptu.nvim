@@ -10,9 +10,9 @@ local utils = require("impromptu.utils")
 
 check.for_options = function(options, expected_grid, col_size)
     local ask = require('impromptu.internals.ask')
-    local rendered_options = utils.map(options, ask.render_line)
-    local window_ops = {height = col_size, top_offset = 0, bottom_offset = 0}
-    local grid = ask.lines_to_grid(rendered_options, window_ops)
+    local shared = require('impromptu.internals.shared')
+    local rendered_options = utils.map(options, shared.render_line)
+    local grid = shared.lines_to_grid(rendered_options, col_size)
 
     assert.are_same(grid, expected_grid)
     return grid
@@ -49,11 +49,11 @@ insulate("About #ask form", function()
 
   describe("when writing #options to the buffer", function()
     it("We can serialize options to strings", function()
-      local ask = require('impromptu.internals.ask')
+      local shared = require('impromptu.internals.shared')
       local opts = {
         {key = "a", description = "Option a"}
       }
-      local line = ask.render_line(opts[1])
+      local line = shared.render_line(opts[1])
 
       assert.are_same("[a] Option a", line)
     end)
@@ -113,16 +113,16 @@ insulate("About #ask form", function()
           { "  [c] The option c",  "  [d] Opt d" },
         }, 2)
 
-      local ask = require('impromptu.internals.ask')
+      local shared = require('impromptu.internals.shared')
       assert.are_same({
           '  [a] Option a      [c] The option c',
           '  [b] Opt b         [d] Opt d',
-      }, ask.render_grid(grid, false))
+      }, shared.render_grid(grid, false))
 
       assert.are_same({
           '  [a] Option a  [c] The option c',
           '  [b] Opt b     [d] Opt d',
-      }, ask.render_grid(grid, true))
+      }, shared.render_grid(grid, true))
 
     end)
 

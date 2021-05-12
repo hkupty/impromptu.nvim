@@ -1,5 +1,4 @@
 -- luacheck: globals unpack vim
-local nvim = vim.api
 local utils = require("impromptu.utils")
 local heuristics = require("impromptu.heuristics")
 local shared = require("impromptu.internals.shared")
@@ -25,92 +24,6 @@ ask.tree = function(session, option)
   else
     return false
   end
-end
-
-ask.render_line = function(line)
-    return  "[" .. line.key .. "] " .. line.description
-end
-
-ask.lines_to_grid = function(opts, window_ops)
-  local grid = {}
-
-  local max_sz = window_ops.height - window_ops.top_offset
-
-  for ix = 0, #opts + (#opts - 1) % max_sz, max_sz do
-    local column = {}
-    for j = 1, max_sz do
-      local k = opts[ix + j]
-      if k ~= nil then
-        table.insert(column, "  " .. k)
-      else
-        break
-      end
-    end
-
-    if #column ~= 0 then
-      table.insert(grid, column)
-    end
-  end
-
-  return grid
-end
-
-ask.render_grid = function(grid, is_compact)
-  local columns = #grid
-  local lines = {}
-  local widths = {}
-  local max_width = 0
-
-  for column = 1, #grid do
-    local max = 0
-
-    for row = 1, #grid[column] do
-      local sz = utils.displaywidth(grid[column][row])
-
-      if sz > max then
-        max = sz
-      end
-    end
-
-    if max > max_width then
-      max_width = max
-    end
-
-    widths[column] = max
-  end
-
-  -- Inverted the order since we produce a table of lines
-  for row = 1, #grid[1] do
-    local line = {}
-
-    for column = 1, columns do
-      local item = grid[column][row]
-
-      if item == nil then
-        break
-      end
-
-      local col_width
-
-      if is_compact then
-        col_width = widths[column]
-      else
-        col_width = max_width
-      end
-
-      local cur_width = utils.displaywidth(item)
-
-      if column ~= columns then
-        table.insert(line, item .. string.rep(" ", col_width - cur_width))
-      else
-        table.insert(line, item)
-      end
-    end
-
-    table.insert(lines, table.concat(line, ""))
-  end
-
-  return lines
 end
 
 ask.get_options = function(obj)
@@ -188,10 +101,10 @@ ask.get_header = function(obj)
  end
 
  ask.do_mappings = function(obj, opts)
-  nvim.nvim_command("mapclear <buffer>")
+  vim.api.nvim_command("mapclear <buffer>")
 
    for _, v in ipairs(opts) do
-     nvim.nvim_command(
+     vim.api.nvim_command(
        "map <nowait> <buffer> " ..
        v.key ..
        " <Cmd>lua require('impromptu').callback("  ..
@@ -205,9 +118,9 @@ ask.get_header = function(obj)
 
 ask.draw = function(obj, opts, window_ops)
   local content = {}
-  local lines_to_grid = obj.lines_to_grid or ask.lines_to_grid
-  local grid = lines_to_grid(utils.map(opts, ask.render_line), window_ops)
-  local lines = ask.render_grid(grid, obj.is_compact)
+  local lines_to_grid = obj.lines_to_grid or shared.lines_to_grid
+  local grid = lines_to_grid(utils.map(opts, shared.render_line), window_ops.height - window_ops.top_offset)
+  local lines = shared.render_grid(grid, obj.is_compact)
 
   local add = function(coll)
     for _, line in ipairs(coll) do
@@ -224,11 +137,11 @@ ask.draw = function(obj, opts, window_ops)
 
 ask.do_hl = function(obj, opts)
   for ix = #obj.hls, 1, -1 do
-    nvim.nvim_call_function("matchdelete", {obj.hls[ix]})
+    vim.fn.matchdelete(obj.hls[ix])
     table.remove(obj.hls, ix)
   end
 
-  table.insert(obj.hls, nvim.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
+  table.insert(obj.hls, vim.fn.matchaddpos("Operator", {1, 20}))
 
   for _, opt in ipairs(opts) do
     local hl
@@ -236,8 +149,7 @@ ask.do_hl = function(obj, opts)
     if opt.hl then
       hl = opt.hl
       table.insert(obj.hls,
-        nvim.nvim_call_function("matchadd",
-          {hl, utils.str_escape(ask.render_line(opt))}
+        vim.fn.matchadd(hl, utils.str_escape(shared.render_line(opt))
         )
       )
     end
@@ -255,11 +167,11 @@ ask.render = function(obj)
   ask.do_hl(obj, opts)
   content = ask.draw(obj, opts, window_ops)
 
-  nvim.nvim_buf_set_option(obj.buffer, "modifiable", true)
-  nvim.nvim_buf_set_option(obj.buffer, "readonly", false)
-  nvim.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
-  nvim.nvim_buf_set_option(obj.buffer, "modifiable", false)
-  nvim.nvim_buf_set_option(obj.buffer, "readonly", true)
+  vim.api.nvim_buf_set_option(obj.buffer, "modifiable", true)
+  vim.api.nvim_buf_set_option(obj.buffer, "readonly", false)
+  vim.api.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
+  vim.api.nvim_buf_set_option(obj.buffer, "modifiable", false)
+  vim.api.nvim_buf_set_option(obj.buffer, "readonly", true)
 
   return obj
 end

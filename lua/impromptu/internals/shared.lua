@@ -1,10 +1,10 @@
 -- luacheck: globals unpack vim utf8
-local nvim = vim.api
+local utils = require("impromptu.utils")
 local shared = {}
 
 local bottom = function(_)
-  local width = vim.api.nvim_get_option("columns")
-  local height = vim.api.nvim_get_option("lines")
+  local width = vim.o.columns
+  local height = vim.o.lines
   return {
     relative = "editor",
     width = width,
@@ -15,13 +15,15 @@ local bottom = function(_)
 end
 
 local center = function(obj)
-  local width = vim.api.nvim_get_option("columns")
-  local height = vim.api.nvim_get_option("lines")
+  local width = vim.o.columns
+  local height = vim.o.lines
   local offset = #obj.lines
 
   if obj.header ~= nil then
     offset = offset + 4
   end
+
+  offset = obj.height or offset
 
   return {
     relative = "editor",
@@ -32,58 +34,68 @@ local center = function(obj)
   }
 end
 
+shared.resize = function(obj)
+  local location
+  if obj.location == "center" then
+    location = center
+  else
+    location = bottom
+  end
+
+  if obj.winid ~= nil then
+    vim.api.nvim_win_set_config(obj.winid, location(obj))
+    end
+end
 
 shared.show = function(obj)
-  local cwin = vim.api.nvim_call_function("win_getid", {})
-  if obj.buffer == nil then
-    local cb
-    if vim.api.nvim_open_win ~= nil then
-      cb = vim.api.nvim_create_buf(false, true)
-      local location
-      if obj.location == "center" then
-        location = center
-      else
-        location = bottom
-      end
-      local winid = vim.api.nvim_open_win(cb, true, location(obj))
-      vim.api.nvim_win_set_option(winid, "breakindent", true)
-      vim.api.nvim_win_set_option(winid, "number", false)
-      vim.api.nvim_win_set_option(winid, "relativenumber", false)
-      vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
-      obj:set("winid", winid)
-    else
-      vim.api.nvim_command("botright 15 new")
-      cb = vim.api.nvim_get_current_buf()
-      -- TODO Change to API-based when nvim_win_set_option exists.
-      vim.api.nvim_command("setl breakindent nonu nornu nobuflisted buftype=nofile bufhidden=wipe nolist wfh wfw nowrap")
-    end
-    obj:set("buffer", math.ceil(cb))
+  local cb = vim.api.nvim_create_buf(false, true)
+  local location
+
+  if obj.location == "center" then
+    location = center
+  else
+    location = bottom
   end
+
+  local winid = vim.api.nvim_open_win(cb, true, location(obj))
+
+  vim.api.nvim_win_set_option(winid, "breakindent", true)
+  vim.api.nvim_win_set_option(winid, "number", false)
+  vim.api.nvim_win_set_option(winid, "relativenumber", false)
+  vim.api.nvim_win_set_option(winid, "fillchars", "eob: ")
+  vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
+
+  obj:set("winid", winid)
+  obj:set("buffer", math.ceil(cb))
 
   return obj
 end
 
 shared.window_for_obj = function(obj)
-  obj = shared.show(obj)
+  if obj.winid == nil then
+    obj = shared.show(obj)
+  end
 
-  local bufnr = vim.api.nvim_call_function("bufnr", {obj.buffer})
-  local window = obj.winid or vim.api.nvim_call_function("win_getid", {
-    vim.api.nvim_call_function("bufwinnr", {obj.buffer})
-  })
-  local sz = vim.api.nvim_win_get_width(window)
-  local h = vim.api.nvim_win_get_height(window)
+  local sz = vim.api.nvim_win_get_width(obj.winid)
+  local h = vim.api.nvim_win_get_height(obj.winid)
   local top_offset = 0
+  local bottom_offset = 0
+
   if obj.header ~= nil then
     top_offset = top_offset + 2
   end
 
+  if obj.footer ~= nil then
+    bottom_offset = bottom_offset + 2
+  end
+
   return {
-    bufnr = bufnr,
-    window = window,
+    bufnr = vim.fn.bufnr(obj.buffer),
+    window = obj.winid,
     width = sz,
     height = h,
     top_offset = top_offset,
-    bottom_offset = 0
+    bottom_offset = bottom_offset
   }
 end
 
@@ -102,7 +114,11 @@ shared.footer = function(content, window_ops)
   local footer = {}
 
   table.insert(footer, shared.sub_div(window_ops.width))
-  table.insert(footer, content)
+  if type(content) == "string" then
+    table.insert(footer, content)
+  elseif type(content) == "table" then
+    footer = utils.extend{footer, content}
+  end
 
  return footer
 end
@@ -154,5 +170,88 @@ shared.get_footer = function(obj)
    return footer
  end
 
+shared.lines_to_grid = function(opts, max_sz)
+  local grid = {}
+
+  for ix = 0, #opts + (#opts - 1) % max_sz, max_sz do
+    local column = {}
+    for j = 1, max_sz do
+      local k = opts[ix + j]
+      if k ~= nil then
+        table.insert(column, "  " .. k)
+      else
+        break
+      end
+    end
+
+    if #column ~= 0 then
+      table.insert(grid, column)
+    end
+  end
+
+  return grid
+end
+
+shared.render_grid = function(grid, is_compact)
+  local columns = #grid
+  local lines = {}
+  local widths = {}
+  local max_width = 0
+
+  for column = 1, #grid do
+    local max = 0
+
+    for row = 1, #grid[column] do
+      local sz = utils.displaywidth(grid[column][row])
+
+      if sz > max then
+        max = sz
+      end
+    end
+
+    if max > max_width then
+      max_width = max
+    end
+
+    widths[column] = max
+  end
+
+  -- Inverted the order since we produce a table of lines
+  for row = 1, #grid[1] do
+    local line = {}
+
+    for column = 1, columns do
+      local item = grid[column][row]
+
+      if item == nil then
+        break
+      end
+
+      local col_width
+
+      if is_compact then
+        col_width = widths[column]
+      else
+        col_width = max_width
+      end
+
+      local cur_width = utils.displaywidth(item)
+
+      if column ~= columns then
+        table.insert(line, item .. string.rep(" ", col_width - cur_width))
+      else
+        table.insert(line, item)
+      end
+    end
+
+    table.insert(lines, table.concat(line, ""))
+  end
+
+  return lines
+end
+
+shared.render_line = function(line)
+    return  "[" .. line.key .. "] " .. line.description
+end
 
 return shared

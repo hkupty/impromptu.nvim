@@ -1,15 +1,31 @@
 -- luacheck: globals unpack vim
-local nvim = vim.api
 local utils = require("impromptu.utils")
 local shared = require("impromptu.internals.shared")
+local proxy = require("impromptu.proxy")
+
 
 local filter = {}
 
-filter.render_line = function(line)
-    return "   " .. line.description
+local ns = vim.api.nvim_create_namespace("impromptu.filter")
+
+filter.at_max_width = function(width)
+  return function(str)
+    local sz = utils.displaywidth(str)
+    if sz > (width - 4) then
+      str = "..." .. string.sub(str, (sz - width + 7), sz)
+    end
+    return str
+  end
 end
 
-local to_mapping = function(key, session_id, callback_id, modes)
+filter.render_line = function(width)
+  local at_width = filter.at_max_width(width)
+  return function(line)
+    return "   " .. at_width(line.description)
+  end
+end
+
+local to_mapping = function(key, session_id, callback_id)
   vim.api.nvim_command(
     "imap <buffer> ".. key .." " ..
     "<Cmd>lua require('impromptu').callback("  ..
@@ -30,6 +46,8 @@ filter.do_mappings = function(obj)
   vim.api.nvim_command("mapclear <buffer>")
   to_mapping("<BS>", obj.session_id, "__backspace")
   to_mapping("<CR>", obj.session_id, "__select")
+  to_mapping("<C-l>", obj.session_id, "__clear")
+  to_mapping("<C-x>", obj.session_id, "__clear_word")
   to_mapping("<C-n>", obj.session_id, "__down")
   to_mapping("<C-p>", obj.session_id, "__up")
   to_mapping("<C-c>", obj.session_id, "__quit")
@@ -37,6 +55,8 @@ filter.do_mappings = function(obj)
   for key, callback_id in pairs(obj.mappings) do
     to_mapping(key, obj.session_id, callback_id)
   end
+
+  -- TODO try vim.register_keystroke_callback
 
   vim.api.nvim_command(
     "augroup impromtpu | " ..
@@ -55,7 +75,7 @@ end
 
 filter.draw = function(obj, opts, window_ops)
   local content = {}
-  local lines = utils.map(opts, filter.render_line)
+  local lines = utils.map(opts, filter.render_line(window_ops.width))
 
   if lines[obj.offset] ~= nil then
     lines[obj.offset] = utils.replace_at(lines[obj.offset], "→", 2)
@@ -73,6 +93,76 @@ filter.draw = function(obj, opts, window_ops)
   add(shared.footer(table.concat(obj.filter_exprs, " "), window_ops))
 
   return content
+end
+
+filter.rank = function(tbl)
+  table.sort(tbl, function(a, b)
+    if a.score ~= nil and b.score ~= nil then
+      return a.score > b.score
+    else
+      return #a.description < #b.description
+    end
+  end)
+end
+
+filter._set_hl = function(_, _, bufnr, _, _)
+  local obj = proxy.reverse_lookup("buffer", bufnr)
+  if obj == nil or obj.type ~= "filter"  then
+    return true
+  end
+  local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
+  local lines = vim.api.nvim_buf_get_lines(
+    bufnr, window_ops.top_offset, -1 * (window_ops.bottom_offset + 1), false)
+
+  for i, line in ipairs(lines) do
+    if line == "" then
+      break
+    end
+
+    local line_descr = obj.current_opts[i]
+    local posno = #line_descr.positions
+    local maxc = vim.fn.strlen(line)
+    local space = 2
+    local line_ix = i + window_ops.top_offset - 1
+
+    local highlight = "Function"
+
+    if i == obj.offset then
+      space = space + 2
+      vim.api.nvim_buf_set_extmark(
+        bufnr,
+        ns,
+        line_ix,
+        0,
+        {
+          hl_group = "WarningMsg",
+          end_col = 4,
+          ephemeral = true
+        })
+    end
+
+    for cnt, chunk in ipairs(line_descr.positions) do
+
+      if cnt == posno then
+        highlight = "Keyword"
+      end
+
+      vim.api.nvim_buf_set_extmark(
+        bufnr,
+        ns,
+        line_ix,
+        math.min(maxc, chunk[1] + space),
+        {
+          hl_group = highlight,
+          end_col = math.min(maxc, chunk[2] + space + 1),
+          ephemeral = true
+        })
+    end
+
+  end
+
+  -- No need to run down the chain
+  return false
 end
 
 filter.get_options = function(obj, window_ops)
@@ -97,6 +187,7 @@ filter.get_options = function(obj, window_ops)
       obj.filter_fn(obj.filter_exprs, obj.lines)
       )
     ) do
+    line.positions = line.positions or {}
     table.insert(options, line)
   end
 
@@ -105,6 +196,8 @@ filter.get_options = function(obj, window_ops)
   elseif #options == max_items then
     obj.full = true
   end
+
+  filter.rank(options)
 
   if obj.offset >= #options then
     obj.offset = #options
@@ -123,6 +216,14 @@ filter.filter_fn = function(filter_exprs, lines)
     return function() return end
   end
 
+  if #filter_exprs == 1 and filter_exprs[1] == "" then
+    return function()
+      local itm = lines[ix]
+      ix = ix + 1
+      return itm
+    end
+  end
+
   local function nxt()
     local itm = lines[ix]
     ix = ix + 1
@@ -133,11 +234,16 @@ filter.filter_fn = function(filter_exprs, lines)
       return nxt()
     end
 
+    local positions = {}
+
     for _, filter_expr in ipairs(filter_exprs) do
-      if not string.find(itm.description:lower(), filter_expr:lower(), 1, true) then
+      local fnd, x = string.find(itm.description:lower(), filter_expr:lower())
+      if not fnd then
         return nxt()
       end
+      table.insert(positions, {fnd, x})
     end
+    itm.positions = positions
     return itm
   end
 
@@ -186,28 +292,8 @@ filter.stage = function(obj, opt)
   table.insert(obj.staged_expr, opt)
 end
 
-filter.do_hl = function(obj)
-  for ix = #obj.hls, 1, -1 do
-    vim.api.nvim_call_function("matchdelete", {obj.hls[ix]})
-    table.remove(obj.hls, ix)
-  end
-
-  local exprs_sz = #obj.filter_exprs
-  table.insert(obj.hls, vim.api.nvim_call_function("matchaddpos", {"Operator", {1}, 20}))
-  for ix, expr in ipairs(obj.filter_exprs) do
-    if expr ~= "" then
-      local hl
-
-      if ix == exprs_sz then
-        hl = "Keyword"
-      else
-        hl = "Function"
-      end
-
-      table.insert(obj.hls, vim.api.nvim_call_function("matchadd", {hl, "\\c" .. expr}))
-    end
-  end
-
+filter.cleanup = function(obj)
+  obj.first = nil
 end
 
 filter.render = function(obj)
@@ -216,15 +302,17 @@ filter.render = function(obj)
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
 
   if first_run then
-    vim.api.nvim_call_function("matchadd", {"WarningMsg", " →"})
+    --vim.fn.matchadd("WarningMsg", " →")
     filter.do_mappings(obj)
   end
 
   if #obj.staged_expr == 0 and obj.full == nil then
     local opts = filter.get_options(obj, window_ops)
     local content = filter.draw(obj, opts, window_ops)
+    obj.current_opts = opts
 
-    filter.do_hl(obj)
+    vim.api.nvim_buf_set_option(obj.buffer, "modifiable", true)
+    vim.api.nvim_buf_set_option(obj.buffer, "readonly", false)
     vim.api.nvim_buf_set_lines(obj.buffer, 0, -1, false, content)
     vim.api.nvim_win_set_cursor(window_ops.window, {#content, utils.displaywidth(content[#content])})
     vim.api.nvim_command("startinsert!")
@@ -239,6 +327,23 @@ filter.move_selection = function(obj, direction)
   return true
 end
 
+filter.clear_word = function(obj)
+  local lst
+  local filter_exprs = {}
+  for i, v in ipairs(obj.filter_exprs) do
+    if v == "" then
+      break
+    else
+      lst = i
+    end
+  end
+  for i=1, lst - 1, 1  do
+    filter_exprs[i] = obj.filter_exprs[i]
+  end
+  table.insert(filter_exprs, "")
+  obj.filter_exprs = filter_exprs
+end
+
 filter.handle = function(obj, option)
   if option == "__select" then
     vim.api.nvim_command("stopinsert")
@@ -249,6 +354,10 @@ filter.handle = function(obj, option)
     filter.move_selection(obj, 1)
   elseif option == "__backspace" then
     filter.append(obj, -1)
+  elseif option == "__clear" then
+    obj.filter_exprs = {""}
+  elseif option == "__clear_word" then
+    filter.clear_word(obj)
   elseif option == "__flush" then
     for _, opt in ipairs(obj.staged_expr) do
       filter.append(obj, opt)
@@ -269,5 +378,10 @@ filter.update = function(obj, data)
     return filter.render(obj)
   end
 end
+
+
+vim.api.nvim_set_decoration_provider(ns, {
+    on_win = filter._set_hl
+})
 
 return filter

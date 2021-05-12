@@ -1,11 +1,11 @@
 -- luacheck: globals unpack vim utf8
-local nvim = vim.api
 local sessions = require("impromptu.sessions")
 local internals = {
   types = {
     ask = require("impromptu.internals.ask"),
     filter = require("impromptu.internals.filter"),
-    form = require("impromptu.internals.form")
+    form = require("impromptu.internals.form"),
+    showcase = require("impromptu.internals.showcase")
   },
   shared = require("impromptu.internals.shared")
 }
@@ -19,21 +19,18 @@ internals.destroy = function(obj_or_session)
     obj = sessions[obj_or_session]
   end
 
-  local winnr = math.floor(nvim.nvim_call_function("bufwinnr", {obj.buffer}))
-  if vim.api.nvim_win_close ~= nil then
-    local window = vim.api.nvim_call_function("win_getid", {winnr})
-    vim.api.nvim_win_close(window, true)
-  else
-    -- TODO Drop this once nvim 0.4 is out
-    local save_winnr = nvim.nvim_call_function("bufwinnr", {nvim.nvim_get_current_buf()})
-    vim.api.nvim_command(winnr .. ' wincmd w | q')
-    if save_winnr ~= -1 and save_winnr ~= winnr then
-      vim.api.nvim_command(save_winnr .. ' wincmd w')
-    end
-  end
+  local winnr = vim.fn.bufwinnr(obj.buffer)
+  local window = vim.api.nvim_call_function("win_getid", {winnr})
+  vim.api.nvim_win_close(window, true)
   vim.api.nvim_command("stopinsert")
 
+  obj.hls = {}
+
   obj.destroyed = true
+  local cleanup_fn = internals.types[obj.type].cleanup
+  if cleanup_fn ~= nil then
+    return cleanup_fn(obj)
+  end
 end
 
 internals.render = function(obj)
