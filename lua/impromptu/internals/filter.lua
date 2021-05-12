@@ -56,6 +56,8 @@ filter.do_mappings = function(obj)
     to_mapping(key, obj.session_id, callback_id)
   end
 
+  -- TODO try vim.register_keystroke_callback
+
   vim.api.nvim_command(
     "augroup impromtpu | " ..
     "au! InsertCharPre <buffer="  .. obj.buffer .. "> " ..
