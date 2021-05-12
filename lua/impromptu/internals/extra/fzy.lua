@@ -10,8 +10,6 @@
 
 local ffi = require'ffi'
 
-local library_path = vim.fn.findfile("lua/impromptu/internals/extra/libfzy.so", vim.o.rtp)
-
 local native
 
 
@@ -65,7 +63,7 @@ local MATCH_MAX_LENGTH = 1024
 local fzy = {}
 
 function fzy.load(path)
-  native = ffi.load(path or library_path)
+  native = ffi.load(path)
 end
 
 function fzy.has_match(needle, haystack)
