@@ -85,7 +85,7 @@ showcase.render = function(obj)
   showcase.do_mappings(obj, the_actions)
   actions = shared.render_grid(
     shared.lines_to_grid(utils.map(the_actions, shared.render_line), window_ops.bottom_offset - 1), true)
-  local showcase = shared.render_grid(showcase.transpose(obj), false)
+  local show = shared.render_grid(showcase.transpose(obj), false)
 
   local content = {}
 
@@ -96,8 +96,8 @@ showcase.render = function(obj)
   end
 
   add(shared.header(obj, window_ops))
-  add(showcase)
-  add(shared.spacer(showcase, window_ops))
+  add(show)
+  add(shared.spacer(show, window_ops))
   add(shared.footer(actions, window_ops))
 
   obj.height = #content

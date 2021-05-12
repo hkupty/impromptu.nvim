@@ -1,12 +1,7 @@
 -- luacheck: globals unpack vim utf8
-local utils = require("impromptu.utils")
 local shared = require("impromptu.internals.shared")
 
 local form = {}
-
-form.line = function(key, opt)
-    return  key .. "| " .. opt.description .. ": "
-end
 
 form.get_header = function(obj)
   local header = ""
@@ -18,45 +13,9 @@ form.get_header = function(obj)
   return header
 end
 
-local to_mapping = function(key, session_id, callback_id, modes)
-  vim.api.nvim_command(
-    "imap <buffer> ".. key .." " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    session_id ..
-    ", '".. callback_id .."')<CR>"
-  )
-
-  vim.api.nvim_command(
-    "nmap <buffer> ".. key .." " ..
-    "<Cmd>lua require('impromptu').callback("  ..
-    session_id ..
-    ", '".. callback_id .."')<CR>"
-  )
-end
-
-form.do_mappings = function(obj)
-  vim.api.nvim_command("mapclear <buffer>")
-  to_mapping("<Tab>", obj.session_id, "__next")
-  to_mapping("<CR>", obj.session_id, "__submit")
-  to_mapping("<C-c>", obj.session_id, "__quit")
-end
-
-form.set_cursor = function(obj, key)
-  local pos = obj.pos[key]
-  local window_ops = shared.window_for_obj(obj)
-
-  vim.api.nvim_win_set_cursor(window_ops.window, pos)
-  obj.current = key
-end
 
 form.draw = function(obj, window_ops)
   local header = form.get_header(obj)
-  local first
-  local order = {}
-  local ix
-  obj.pos = {}
-  vim.api.nvim_command("setl conceallevel=2 concealcursor=nvic")
-
 
   local content = {}
 

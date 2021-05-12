@@ -76,7 +76,6 @@ shared.window_for_obj = function(obj)
     obj = shared.show(obj)
   end
 
-  local bufnr = vim.api.nvim_call_function("bufnr", {obj.buffer})
   local sz = vim.api.nvim_win_get_width(obj.winid)
   local h = vim.api.nvim_win_get_height(obj.winid)
   local top_offset = 0

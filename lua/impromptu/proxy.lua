@@ -1,3 +1,4 @@
+-- luacheck: globals vim
 local sessions = require("impromptu.sessions")
 
 local proxy = function(session)

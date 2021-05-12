@@ -57,14 +57,7 @@ end
 
 -- Constants
 
-local SCORE_GAP_LEADING = -0.005
-local SCORE_GAP_TRAILING = -0.005
 local SCORE_GAP_INNER = -0.01
-local SCORE_MATCH_CONSECUTIVE = 1.0
-local SCORE_MATCH_SLASH = 0.9
-local SCORE_MATCH_WORD = 0.8
-local SCORE_MATCH_CAPITAL = 0.7
-local SCORE_MATCH_DOT = 0.6
 local SCORE_MAX = math.huge
 local SCORE_MIN = -math.huge
 local MATCH_MAX_LENGTH = 1024

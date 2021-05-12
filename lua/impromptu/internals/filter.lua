@@ -7,6 +7,7 @@ local proxy = require("impromptu.proxy")
 local filter = {}
 
 local ns = vim.api.nvim_create_namespace("impromptu.filter")
+
 filter.at_max_width = function(width)
   return function(str)
     local sz = utils.displaywidth(str)
@@ -24,7 +25,7 @@ filter.render_line = function(width)
   end
 end
 
-local to_mapping = function(key, session_id, callback_id, modes)
+local to_mapping = function(key, session_id, callback_id)
   vim.api.nvim_command(
     "imap <buffer> ".. key .." " ..
     "<Cmd>lua require('impromptu').callback("  ..
@@ -102,10 +103,10 @@ filter.rank = function(tbl)
   end)
 end
 
-filter._set_hl = function(_, _win, bufnr, _top, _bot)
+filter._set_hl = function(_, _, bufnr, _, _)
   local obj = proxy.reverse_lookup("buffer", bufnr)
-  if obj == nil then
-    return false
+  if obj == nil or obj.type ~= "filter"  then
+    return true
   end
   local window_ops = shared.with_bottom_offset(shared.window_for_obj(obj))
   local lines = vim.api.nvim_buf_get_lines(

@@ -164,8 +164,8 @@ setmetatable(impromptu.new, {
   end
 })
 
-impromptu.callback = function(session, option)
-  local obj = proxy(session)
+impromptu.callback = function(session_id, option)
+  local obj = proxy(session_id)
 
   if obj == nil then
      return
@@ -182,8 +182,8 @@ impromptu.callback = function(session, option)
 end
 
 impromptu.recent = setmetatable({}, {
-    __index = function(_, session)
-      local ref = proxy(session)
+    __index = function(_, session_id)
+      local ref = proxy(session_id)
 
       ref:set("winid", nil)
       ref:set("buffer", nil)
@@ -213,7 +213,7 @@ local function cfgproxy(map)
       local pathsz = #tbl.path
 
       for i = 1, pathsz do
-        oldcfg = cfg
+        local oldcfg = cfg
         cfg = {}
         cfg[tbl.path[pathsz + 1 - i]] = oldcfg
       end
