@@ -64,6 +64,7 @@ shared.show = function(obj)
   vim.api.nvim_win_set_option(winid, "relativenumber", false)
   vim.api.nvim_win_set_option(winid, "fillchars", "eob: ")
   vim.api.nvim_buf_set_option(cb, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_option(cb, "filetype", "impromptu")
 
   obj:set("winid", winid)
   obj:set("buffer", math.ceil(cb))
